@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#4F46E5",
+                        "primary-hover": "#4338CA",
+                        "primary-container": "#EEF2FF",
+                        "on-primary-container": "#312E81",
+                        "background": "#F8FAFC",
+                        "surface": "#FFFFFF",
+                        "surface-container": "#F1F5F9",
+                        "surface-container-low": "#F8FAFC",
+                        "on-surface": "#0F172A",
+                        "on-surface-variant": "#475569",
+                        "outline": "#CBD5E1",
+                        "outline-variant": "#E2E8F0",
+                        "error": "#EF4444"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "48px",
+                        "margin": "32px",
+                        "lg": "32px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "h2": ["Inter"],
+                        "h3": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h2": ["30px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex items-center justify-center p-md">
+<!-- Login Container -->
+<main class="w-full max-w-[1200px] grid md:grid-cols-2 bg-surface rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 border border-outline-variant">
+<!-- Left Side: Login Form -->
+<div class="p-lg md:p-xl flex flex-col justify-center">
+<!-- Brand -->
+<div class="mb-xl">
+<h1 class="font-h1 text-h1 text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-4xl" data-icon="hub">hub</span>
+                Nexus AI
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Precision hiring through neural intelligence.</p>
+</div>
+<!-- Role Selection -->
+<div class="mb-lg">
+<label class="font-label-md text-label-md text-on-surface block mb-sm">Select Your Role</label>
+<div class="grid grid-cols-2 gap-sm">
+<button class="flex items-center justify-center gap-xs p-md border-2 border-primary bg-primary-container rounded-xl font-label-md text-label-md text-primary transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+                    Candidate
+                </button>
+<button class="flex items-center justify-center gap-xs p-md border border-outline hover:bg-surface-container hover:border-outline rounded-xl font-label-md text-label-md text-on-surface-variant transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="business_center">business_center</span>
+                    Recruiter
+                </button>
+</div>
+</div>
+<!-- Credentials Form -->
+<form class="space-y-md">
+<div>
+<label class="font-label-md text-label-md text-on-surface block mb-xs" for="email">Email Address</label>
+<input class="w-full p-md bg-surface border border-outline rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-on-surface-variant/40" id="email" placeholder="name@nexus.ai" type="email"/>
+</div>
+<div>
+<label class="font-label-md text-label-md text-on-surface block mb-xs" for="password">Password</label>
+<div class="relative">
+<input class="w-full p-md bg-surface border border-outline rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-on-surface-variant/40" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-xs cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-label-md text-label-md text-on-surface-variant group-hover:text-on-surface">Remember me</span>
+</label>
+<a class="font-label-md text-label-md text-primary hover:text-primary-hover font-semibold transition-colors" href="#">Forgot password?</a>
+</div>
+<button class="w-full py-md bg-primary text-white rounded-xl font-h3 text-label-md hover:bg-primary-hover transition-all active:scale-[0.98] shadow-lg shadow-primary/20" type="submit">
+                Sign In
+            </button>
+</form>
+<!-- Social/Secondary Login -->
+<div class="mt-xl pt-lg border-t border-outline-variant">
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant/60 mb-md uppercase tracking-widest">Or continue with</p>
+<div class="flex gap-sm">
+<button class="flex-1 flex items-center justify-center gap-xs p-md border border-outline rounded-xl hover:bg-surface-container transition-colors">
+<img alt="Google" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQE97L3pJWwLr6cYrY6B-Sh08LZKK_qwiZzINlqTue3q7kGq_zjUQj3SJpC6zMWt0EGM6yaWQa6BfzPzrF6kLJuggbPL796hjQDuhsAqskOuC-exuqxbLiirACoEbWGQDoVW_kb_SzTunwY1sHDQHmxkbZ51VhzsmyZYGdWP9pWS-FQAAY1CJ1W6UCSX4gbkPtqD-o8k9c6wEHjssUg2x5RXjrDEP9GLh3kucHsxKy-FJ7TDQngkEBbvdBIV-kTVXiAKLZqwcKRA"/>
+<span class="font-label-md text-label-md">Google</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-xs p-md border border-outline rounded-xl hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface" data-icon="laptop_mac">laptop_mac</span>
+<span class="font-label-md text-label-md">SSO</span>
+</button>
+</div>
+</div>
+<p class="mt-xl text-center font-body-sm text-body-sm text-on-surface-variant">
+            New to Nexus AI? <a class="text-primary font-bold hover:text-primary-hover transition-colors" href="#">Create an account</a>
+</p>
+</div>
+<!-- Right Side: Illustration & Branding -->
+<div class="hidden md:flex flex-col relative bg-indigo-700 overflow-hidden items-center justify-center p-xl">
+<!-- Background Decorative Elements -->
+<div class="absolute inset-0 opacity-10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuClx-KQf6TzyIqoIGd_9xKy1aO3mpK7gT6q5grYVt86tOxVymJHLt3eS1w4Z594oPPWUggFf8kfy0LDAT26wPETovr9buYVOAkk9f3DuYktOrFbY-w2ir18rBGtdlGGVqxMjrAp9mJ1A1IkMEyYzkSrufgXoSD4h2jlX5zyvzqIR06NGWXrmHSTEE4Rmfi6bgPiTjoMdXd7s5pxKKwflgPYvF4_yw6iB-JgjyW5ipr4WbY86pokzmawIA1ymTjK6ClNAHexL0_qJA');"></div>
+<div class="absolute -top-24 -right-24 w-96 h-96 bg-primary-hover rounded-full blur-3xl opacity-40"></div>
+<div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-900 rounded-full blur-3xl opacity-60"></div>
+<div class="relative z-10 text-center">
+<div class="mb-lg inline-flex p-md bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
+<img alt="AI Visualization" class="w-full max-w-sm rounded-xl shadow-2xl" data-alt="abstract neural network visualization with glowing nodes and blue digital connections in a futuristic dark space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8KRg0p9737ZOYPi6JMRa7qn6kd27QcyKbbJpkB-3Kj67PTYAYEH3XBp18ZyvlE3qDhDQ7ilgG--wPgSrEOQ9AGJLQW5TTE7VExn9_hBMeneoxHA8crr7Q7XXpMEafH337-QleQx0mmRYlSVtPmWvabpC2Vb7gG8JW9lv2PMok4ZsCIBGkD_9fS8VsS8GPabqpxXjIOqBVvlb7xiLx8PGo2JIuk36jsrwpmoXMvFxUaXyZTJD4jKSkVyw-XKLEhEvfM06LLqMsgg"/>
+</div>
+<div class="max-w-xs mx-auto">
+<h2 class="font-h2 text-h2 text-white mb-sm">The Intelligence Behind Every Hire</h2>
+<p class="font-body-md text-body-md text-indigo-100/70">
+                    Join 5,000+ companies using neural matching to find their next top talent with 98% accuracy.
+                </p>
+</div>
+<!-- Stats Chips -->
+<div class="mt-xl flex flex-wrap justify-center gap-sm">
+<div class="px-md py-xs bg-white/10 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-xs">
+<span class="material-symbols-outlined text-white text-sm" data-icon="bolt">bolt</span>
+<span class="font-label-sm text-label-sm text-white">4x Faster Screening</span>
+</div>
+<div class="px-md py-xs bg-white/10 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-xs">
+<span class="material-symbols-outlined text-white text-sm" data-icon="verified">verified</span>
+<span class="font-label-sm text-label-sm text-white">Verified Skills</span>
+</div>
+</div>
+</div>
+<!-- Bottom Branding -->
+<div class="absolute bottom-lg text-white/40 font-label-sm text-label-sm">
+            © 2024 Nexus AI Ecosystem. All rights reserved.
+        </div>
+</div>
+</main>
+</body></html>

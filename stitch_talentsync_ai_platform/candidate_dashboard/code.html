@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#4F46E5",
+                        "primary-hover": "#4338CA",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#EEF2FF",
+                        "on-primary-container": "#312E81",
+                        "background": "#F8FAFC",
+                        "surface": "#ffffff",
+                        "on-background": "#0F172A",
+                        "on-surface": "#1E293B",
+                        "outline": "#E2E8F0",
+                        "error": "#EF4444",
+                        "secondary": "#6366F1",
+                        "tertiary": "#F59E0B"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "48px",
+                        "margin": "32px",
+                        "lg": "32px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "h2": ["Inter"],
+                        "h3": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h2": ["30px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex overflow-hidden">
+<!-- Side Navigation -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 gap-2 h-screen w-64 border-r border-slate-200 bg-white font-['Inter'] text-sm font-medium z-50">
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+</div>
+<div>
+<div class="text-lg font-black text-slate-900 tracking-tight">TalentAI</div>
+<div class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Recruiter Portal</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active State: Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-primary rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+                Resume
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+                Jobs
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                Candidates
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+                AI Analytics
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+                Messages
+            </a>
+</nav>
+<div class="mt-auto pt-4 border-t border-slate-100">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                Support
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-error hover:bg-red-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Sign Out
+            </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 overflow-y-auto">
+<!-- Top Navigation -->
+<header class="sticky top-0 w-full flex justify-between items-center px-6 h-16 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200 font-['Inter'] antialiased">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all" placeholder="Search for jobs, companies..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2.5 right-2.5 w-2 h-2 bg-error rounded-full ring-2 ring-white"></span>
+</button>
+<div class="h-8 w-px bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3">
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-slate-200 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEghafXZzOMlv4u5CepWdEvRuL4_oyO_r6ZwNKScB2PH89aNjuJsLdUpIJyageMutaTj54j6WisNcpEOlgD1IfaxpudbXq5ysZLCyb8FrYO8RWwp9qSryodBZrGGq_oL2DERRwAvavo_7NdFVVg0n1GrU5mq7B0kzUp7qO5zIqVqh86BHlVMlB8BKIEUh073bmOt1K1FVsr0HpP5IUnmCWZaUxavNmuQ8TTPMar32gsJW2IsCaCiABHAN2TECAgCUT4hh9FWcAWg"/>
+<div class="hidden lg:block">
+<p class="text-sm font-semibold text-slate-900 leading-none">Alex Rivera</p>
+<p class="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-wider">UX/UI Specialist</p>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 max-w-7xl mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-h1 text-h1 text-slate-900">Welcome back, Alex</h1>
+<p class="font-body-md text-slate-500 mt-1">Here's what's happening with your job applications today.</p>
+</div>
+<button class="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-label-md flex items-center gap-2 shadow-lg shadow-primary/25 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-xl" data-icon="rocket_launch">rocket_launch</span>
+                    Boost Profile
+                </button>
+</div>
+<!-- Bento Grid - Upper Section -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Resume Score Card -->
+<div class="md:col-span-8 bg-white border border-slate-200 rounded-2xl p-md shadow-sm flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+<span class="material-symbols-outlined text-9xl text-primary" data-icon="analytics">analytics</span>
+</div>
+<div class="relative w-48 h-48 flex items-center justify-center">
+<!-- Progress Circle -->
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-slate-100" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-primary" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-dasharray="502.65" stroke-dashoffset="75.40" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-4xl font-extrabold text-slate-900">85%</span>
+<span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Perfect Score</span>
+</div>
+</div>
+<div class="flex-1 space-y-4">
+<h3 class="font-h3 text-h3 text-slate-900">Resume Optimization Insight</h3>
+<p class="text-slate-600 font-body-md leading-relaxed">Your resume is performing better than 92% of candidates in your field. AI recommends adding 3 more quantitative metrics to your experience.</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span> Keyword Match
+                            </span>
+<span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span> Formatting
+                            </span>
+<span class="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="info">info</span> Needs Metrics
+                            </span>
+</div>
+</div>
+</div>
+<!-- Stats Pillar -->
+<div class="md:col-span-4 flex flex-col gap-4">
+<!-- Stat Card 1 -->
+<div class="bg-white border border-slate-200 rounded-2xl p-md shadow-sm flex items-center justify-between hover:border-primary/20 transition-colors">
+<div>
+<p class="text-slate-500 font-label-md">Applications</p>
+<p class="text-3xl font-bold text-slate-900 mt-1">12</p>
+</div>
+<div class="w-12 h-12 bg-primary-container text-primary rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-white border border-slate-200 rounded-2xl p-md shadow-sm flex items-center justify-between hover:border-primary/20 transition-colors">
+<div>
+<p class="text-slate-500 font-label-md">Average Match</p>
+<p class="text-3xl font-bold text-slate-900 mt-1">78%</p>
+</div>
+<div class="w-12 h-12 bg-primary-container text-primary rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="equalizer">equalizer</span>
+</div>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-white border border-slate-200 rounded-2xl p-md shadow-sm flex items-center justify-between hover:border-primary/20 transition-colors">
+<div>
+<p class="text-slate-500 font-label-md">Saved Jobs</p>
+<p class="text-3xl font-bold text-slate-900 mt-1">5</p>
+</div>
+<div class="w-12 h-12 bg-primary-container text-primary rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Matches Section -->
+<section class="space-y-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<h2 class="font-h2 text-h2 text-slate-900">Recent Job Matches</h2>
+<span class="bg-primary/10 text-primary px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest">AI Powered</span>
+</div>
+<a class="text-primary font-semibold text-sm flex items-center gap-1 hover:text-primary-hover group" href="#">
+                        View Job Board <span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Job Card 1 -->
+<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all group flex flex-col h-full shadow-sm">
+<div class="h-32 w-full relative overflow-hidden">
+<img alt="Modern tech office with open workspace" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGT-z0-h4E0P3SNurEvbHPH1mTCHhPe9WsiP9z2EqawnRhewZxOpzqkhGWtO77WCBQh4c3-FJdrsAmUKUPBlDhkChxEj2yiC0TXEoQEuPCna_97v77CxZNpCV4YtiBYhYFnbHJMr1Y5raRr_xPcvK6qdVsBkfWgTQAiA9fHOW8P1CLPn2VFOtmI1hY-AMbTn3vzE6ZkuAa6eCjGZ7Gm7IQKmpbn_oDni_HWRxtOfZWQTNkLFm8yMxq5mEGS5twCe63Pgi76xwUDQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+<div class="absolute bottom-3 left-4 flex items-center gap-2">
+<div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="polymer">polymer</span>
+</div>
+<span class="text-white text-sm font-semibold tracking-wide">Nexus Tech</span>
+</div>
+<div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-black text-primary border border-white/20">
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                                94% MATCH
+                            </div>
+</div>
+<div class="p-5 flex flex-col flex-1 space-y-4">
+<div>
+<h4 class="font-h3 text-lg text-slate-900 group-hover:text-primary transition-colors">Lead UX Designer</h4>
+<p class="text-slate-500 text-sm mt-1.5 flex items-center gap-1.5 font-medium">
+<span class="material-symbols-outlined text-[18px] text-slate-400" data-icon="location_on">location_on</span> San Francisco, CA (Remote)
+                                </p>
+</div>
+<div class="flex flex-wrap gap-2 text-[11px] font-bold">
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">$160k - $210k</span>
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">Full-time</span>
+</div>
+<button class="w-full mt-auto py-3 bg-slate-50 text-slate-700 font-semibold rounded-xl group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+                                Quick Apply
+                            </button>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all group flex flex-col h-full shadow-sm">
+<div class="h-32 w-full relative overflow-hidden">
+<img alt="Abstract tech background" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0lZDih4us7QleNqIpSLRIWcliqBZ4WB7ws4LIBtv2v2gMA_T4-GXHwqn2zEbw1iuWErvEQQLp2UemzjRy4bPBuA6jn_wJ-YSQgU6I0HnuaYB5dwkd3SFPEwRohHbTPoJznSB-gz_qvJiaDhcp3CnDqJlJcEjqGSvphlSNSlqQdl3D58T-PRQVX0ONKhOU5LgtpDSYBCzy--00ab3ydabI-BAwmTpQl3UFeMVlGFXT_X-q3yA30TUdIHF39uiT0sThfCHtMjiOgA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+<div class="absolute bottom-3 left-4 flex items-center gap-2">
+<div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="cloud">cloud</span>
+</div>
+<span class="text-white text-sm font-semibold tracking-wide">CloudFlow AI</span>
+</div>
+<div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-black text-primary border border-white/20">
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                                89% MATCH
+                            </div>
+</div>
+<div class="p-5 flex flex-col flex-1 space-y-4">
+<div>
+<h4 class="font-h3 text-lg text-slate-900 group-hover:text-primary transition-colors">Senior UI Engineer</h4>
+<p class="text-slate-500 text-sm mt-1.5 flex items-center gap-1.5 font-medium">
+<span class="material-symbols-outlined text-[18px] text-slate-400" data-icon="location_on">location_on</span> Austin, TX
+                                </p>
+</div>
+<div class="flex flex-wrap gap-2 text-[11px] font-bold">
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">$140k - $180k</span>
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">Hybrid</span>
+</div>
+<button class="w-full mt-auto py-3 bg-slate-50 text-slate-700 font-semibold rounded-xl group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+                                Quick Apply
+                            </button>
+</div>
+</div>
+<!-- Job Card 3 -->
+<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all group flex flex-col h-full shadow-sm">
+<div class="h-32 w-full relative overflow-hidden">
+<img alt="Team collaborating in office" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeF9jxX9dQyyNgiHNMPi9Q1pcrs6QJgONH4yzcUycXpjpoFGFPgU02pATCqdIaXP5sWjx-ie2VuhXA7uy4Rvb9G1v0umsYKsLeE5F9cEW04SfuheBQi7hlKFXRijUIPLRLe-w0cMJJ9BkVfjEAOXq5zAIgmi83UBq2orYXpXv-L3Wpwhaxq0cxYe9w6IyavqKa_eIYh9lIWf6cWHHlXovzUcyIC6pSrboQVkZrX7dv3OLBS-zjuGfB3004Akn_yDyqC8IeoL0PBg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+<div class="absolute bottom-3 left-4 flex items-center gap-2">
+<div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="eco">eco</span>
+</div>
+<span class="text-white text-sm font-semibold tracking-wide">GreenPulse</span>
+</div>
+<div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-black text-primary border border-white/20">
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                                82% MATCH
+                            </div>
+</div>
+<div class="p-5 flex flex-col flex-1 space-y-4">
+<div>
+<h4 class="font-h3 text-lg text-slate-900 group-hover:text-primary transition-colors">Product Designer</h4>
+<p class="text-slate-500 text-sm mt-1.5 flex items-center gap-1.5 font-medium">
+<span class="material-symbols-outlined text-[18px] text-slate-400" data-icon="location_on">location_on</span> New York, NY
+                                </p>
+</div>
+<div class="flex flex-wrap gap-2 text-[11px] font-bold">
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">$130k - $165k</span>
+<span class="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md text-slate-600">On-site</span>
+</div>
+<button class="w-full mt-auto py-3 bg-slate-50 text-slate-700 font-semibold rounded-xl group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+                                Quick Apply
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>
