@@ -10,6 +10,8 @@ import json
 import asyncio
 import datetime
 import logging
+from bson import ObjectId
+from bson.errors import InvalidId
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,7 +58,7 @@ async def upload_resume(
         if not text:
             raise HTTPException(status_code=400, detail="Could not extract text from document")
             
-        structured_data = extract_structured_data(text)
+        structured_data = await extract_structured_data(text)
         
         resume_doc = {
             "user_id": str(current_user["_id"]),
@@ -87,10 +89,11 @@ async def create_job(job: schemas.JobCreate, db = Depends(get_db), current_user:
         result = await db.jobs.insert_one(new_job)
         new_job["_id"] = result.inserted_id
         
-        # Create embedding for job description
+        # Create embedding for job description — run in executor to avoid blocking event loop
         skills_list = job.skills if job.skills else []
         skills_text = ", ".join(skills_list)
-        add_job_embedding(str(result.inserted_id), job.description + " " + skills_text)
+        loop = asyncio.get_event_loop()
+        background_tasks.add_task(loop.run_in_executor, None, add_job_embedding, str(result.inserted_id), job.description + " " + skills_text)
         
         return new_job
     except Exception as e:
@@ -273,13 +276,13 @@ async def apply_to_job(application: schemas.ApplicationCreate, db = Depends(get_
         resume_emb = get_resume_embedding(str(resume["_id"]))
         job_emb    = get_job_embedding(str(job["_id"]))
 
-        if resume_emb is not None and job_emb is not None:
+        if resume_emb is not None and len(resume_emb) > 0 and job_emb is not None and len(job_emb) > 0:
             score = cosine_similarity(resume_emb, job_emb) * 100
         else:
             # Embeddings not ready yet (background task still running)
             score = 0.0
             logger.warning(
-                f"Embeddings not ready for resume {resume['_id']} or job {job['_id']}. Score set to 0."
+                f"Embeddings not ready for resume {resume['_id']} or job {job['_id']}. Initial score set to 0."
             )
         
         # Build application document
@@ -312,28 +315,12 @@ async def get_my_applications(db = Depends(get_db), current_user: dict = Depends
 
         apps = await db.applications.find({"user_id": str(current_user["_id"])}).to_list(1000)
         
-        # Auto-recalculate 0 scores and populate job role
+        # Populate job role efficiently
         for app in apps:
             job = await db.jobs.find_one({"_id": ObjectId(app["job_id"])})
             if job:
                 app["job_role"] = job.get("role")
                 
-            if app.get("match_score", 0.0) == 0.0:
-                try:
-                    resume = await db.resumes.find_one({"user_id": app["user_id"]}, sort=[("created_at", -1)])
-                    if resume and job:
-                        from services.embedding import get_resume_embedding, get_job_embedding
-                        res_emb = get_resume_embedding(str(resume["_id"]))
-                        job_emb = get_job_embedding(str(job["_id"]))
-                        if res_emb and job_emb:
-                            from services.matcher import cosine_similarity
-                            score = cosine_similarity(res_emb, job_emb) * 100
-                            await db.applications.update_one({"_id": app["_id"]}, {"$set": {"match_score": score}})
-                            app["match_score"] = score
-                except Exception:
-                    pass
-
-                    
         return apps
 
     except Exception as e:
@@ -371,16 +358,31 @@ async def get_application_insights(application_id: str, db = Depends(get_db), cu
         if score == 0.0 and resume and job:
             try:
                 from services.embedding import get_resume_embedding, get_job_embedding
+                from services.matcher import cosine_similarity
                 res_emb = get_resume_embedding(str(resume["_id"]))
                 job_emb = get_job_embedding(str(job["_id"]))
-                if res_emb and job_emb:
+                if res_emb is not None and job_emb is not None:
                     score = cosine_similarity(res_emb, job_emb) * 100
                     await db.applications.update_one({"_id": app_oid}, {"$set": {"match_score": score}})
             except Exception as e:
                 logger.error(f"Failed to auto-recalculate score: {e}")
 
+        # Cache Check: If AI analysis was already performed, return cached data
+        if "ai_analysis" in app:
+            cached = app["ai_analysis"]
+            return schemas.MatchResult(
+                match_score=app.get("match_score", 0.0),
+                missing_skills=cached.get("missing_skills", []),
+                suggestions=cached.get("suggestions", []),
+                strengths=cached.get("strengths", []),
+                weaknesses=cached.get("weaknesses", []),
+                interview_tips=cached.get("interview_tips", []),
+                match_breakdown=cached.get("match_breakdown", {"skills": 0, "experience": 0, "education": 0}),
+                job_role=job.get("role", "Unknown Role") if job else "Unknown Role",
+                status=app.get("status", "Applied")
+            )
+
         resume_data = json.loads(resume["parsed_data"]) if resume and "parsed_data" in resume else {}
-        # Ensure it's a dict
         if isinstance(resume_data, str):
             resume_data = json.loads(resume_data)
             
@@ -390,9 +392,14 @@ async def get_application_insights(application_id: str, db = Depends(get_db), cu
         reasoning_score = insights.get("reasoning_score", score)
         final_score = (score * 0.4) + (reasoning_score * 0.6)
         
-        # Update DB with more accurate score if it changed significantly
-        if abs(final_score - app.get("match_score", 0.0)) > 1.0:
-            await db.applications.update_one({"_id": app_oid}, {"$set": {"match_score": final_score}})
+        # Persistent Cache: Save the analysis results to the application document
+        await db.applications.update_one(
+            {"_id": app_oid}, 
+            {"$set": {
+                "match_score": final_score,
+                "ai_analysis": insights
+            }}
+        )
 
         return schemas.MatchResult(
             match_score=final_score,
@@ -495,13 +502,18 @@ async def get_job_applicants(
 
         results = []
         for app in applications:
-            score = app.get("match_score", 0.0)
-
             # Fetch user details
             try:
                 user = await db.users.find_one({"_id": ObjectId(app["user_id"])})
             except Exception:
                 user = None
+
+            # Fetch latest resume
+            resume = await db.resumes.find_one({"user_id": app["user_id"]}, sort=[("created_at", -1)])
+            job = await db.jobs.find_one({"_id": ObjectId(job_id)})
+
+            # Score is fetched directly from application document
+            score = app.get("match_score", 0.0)
 
             # Fetch latest resume parsed data
             resume_preview = None
@@ -586,4 +598,74 @@ async def mark_notification_read(n_id: str, db = Depends(get_db), current_user: 
         return {"message": "Marked as read"}
     except Exception as e:
         logger.error(f"Error marking notification read: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# --- Consolidated Recruiter Dashboard ---
+@router.get("/recruiter/summary")
+async def get_recruiter_summary(db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    """Consolidated endpoint for recruiter dashboard to prevent N+1 frontend fetching."""
+    try:
+        user_id = str(current_user["_id"])
+        
+        # 1. Fetch active jobs
+        jobs = await db.jobs.find({"recruiter_id": user_id, "status": "Active"}).sort("created_at", -1).to_list(50)
+        all_job_ids = [str(j["_id"]) for j in jobs]
+
+        # 2. Optimized Aggregation for Stats (Counts and Averages in one go)
+        stats_agg = await db.applications.aggregate([
+            {"$match": {"job_id": {"$in": all_job_ids}}},
+            {"$group": {
+                "_id": "$job_id",
+                "count": {"$sum": 1},
+                "avg_score": {"$avg": "$match_score"}
+            }}
+        ]).to_list(None)
+
+        stats_map = {s["_id"]: s for s in stats_agg}
+        
+        total_applicants = 0
+        total_score_sum = 0
+        scored_apps_count = 0
+
+        # Enrich jobs with applicant counts from the aggregation map
+        for job in jobs:
+            job_id_str = str(job["_id"])
+            j_stats = stats_map.get(job_id_str, {"count": 0, "avg_score": 0})
+            job["applicant_count"] = j_stats["count"]
+            total_applicants += j_stats["count"]
+            
+            if j_stats["avg_score"] > 0:
+                total_score_sum += (j_stats["avg_score"] * j_stats["count"])
+                scored_apps_count += j_stats["count"]
+
+        avg_match_rate = int(total_score_sum / scored_apps_count) if scored_apps_count > 0 else 0
+        
+        # 3. Get recent activity
+        recent_apps = await db.applications.find({"job_id": {"$in": all_job_ids}}).sort("created_at", -1).limit(5).to_list(5)
+        
+        activity = []
+        for app in recent_apps:
+            user = await db.users.find_one({"_id": ObjectId(app["user_id"])}, {"name": 1})
+            job = next((j for j in jobs if str(j["_id"]) == app["job_id"]), None)
+            if not job:
+                job = await db.jobs.find_one({"_id": ObjectId(app["job_id"])}, {"role": 1})
+                
+            activity.append({
+                "name": user["name"] if user else "Unknown",
+                "jobRole": job["role"] if job else "Unknown Role",
+                "status": app["status"],
+                "applied_at": app["created_at"].isoformat() if "created_at" in app else None
+            })
+
+        return {
+            "stats": {
+                "active_jobs": len(jobs),
+                "total_candidates": total_applicants,
+                "avg_match_rate": f"{avg_match_rate}%"
+            },
+            "jobs": jobs,
+            "recent_activity": activity
+        }
+    except Exception as e:
+        logger.error(f"Error fetching recruiter summary: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

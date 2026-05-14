@@ -25,9 +25,11 @@ class UserUpdateRequest(BaseModel):
     """Strictly typed schema for profile update — prevents NoSQL injection via raw dict."""
     name: Optional[str] = Field(None, min_length=1, max_length=100, strip_whitespace=True)
     phone: Optional[str] = Field(None, max_length=20)
+    location: Optional[str] = Field(None, max_length=100)
+    bio: Optional[str] = Field(None, max_length=500)
+    portfolio_url: Optional[str] = Field(None, max_length=200)
 
     class Config:
-        # Reject any extra fields not declared above
         extra = "forbid"
 
 class JobCreate(BaseModel):

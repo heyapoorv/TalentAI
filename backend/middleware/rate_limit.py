@@ -35,7 +35,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._requests: dict[str, deque] = defaultdict(deque)
 
     def _get_limit(self, path: str) -> int:
-        if path.startswith("/api/auth"):
+        # Strict limits for sensitive auth entry points
+        if path in ("/api/auth/login", "/api/auth/register"):
             return self.auth_limit
         return self.default_limit
 
@@ -59,8 +60,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return True, remaining - 1, 0
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Pass through health checks and docs
-        if request.url.path in ("/", "/health", "/docs", "/openapi.json", "/redoc"):
+        # Pass through health checks, docs, and pre-flight OPTIONS requests
+        if request.url.path in ("/", "/health", "/docs", "/openapi.json", "/redoc") or request.method == "OPTIONS":
             return await call_next(request)
 
         ip = request.client.host if request.client else "unknown"

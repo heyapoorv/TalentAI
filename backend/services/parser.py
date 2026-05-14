@@ -30,7 +30,7 @@ def parse_resume(file_bytes: bytes, filename: str) -> str:
         
     return text.strip()
 
-def extract_structured_data(text: str) -> str:
+async def extract_structured_data(text: str) -> str:
     """
     Extract structured data from resume text using Gemini if available.
     """
@@ -54,12 +54,11 @@ def extract_structured_data(text: str) -> str:
         """
         try:
             try:
-                response = llm_model.generate_content(prompt)
+                response = await llm_model.generate_content_async(prompt)
             except Exception as e:
                 if "404" in str(e) or "not found" in str(e).lower():
                     fallback_model = genai.GenerativeModel("gemini-pro")
-                    response = fallback_model.generate_content(prompt)
-
+                    response = await fallback_model.generate_content_async(prompt)
                 else:
                     raise e
 

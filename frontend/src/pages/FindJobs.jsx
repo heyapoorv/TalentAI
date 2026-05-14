@@ -170,98 +170,95 @@ export default function FindJobs() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm mb-6 flex gap-4 items-center">
-        <div className="flex-1 relative group">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
-          <input
-            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold text-slate-700 placeholder:text-slate-400 transition-all"
-            placeholder="Role, company, or skill…"
-            value={filters.q}
-            onChange={e => setFilter('q', e.target.value)}
-          />
-        </div>
-        <div className="relative">
-          <select
-            className="pl-4 pr-9 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-700 appearance-none cursor-pointer text-sm"
-            value={filters.sort_by}
-            onChange={e => setFilter('sort_by', e.target.value)}
+      {/* Search & Filters Bar */}
+      <div className="bg-white border border-slate-100 rounded-[2.5rem] p-4 shadow-sm mb-10 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
+          {/* Main Search */}
+          <div className="flex-1 w-full relative group">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+            <input
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 outline-none font-bold text-slate-700 placeholder:text-slate-400 transition-all"
+              placeholder="Search by role, company, or skill…"
+              value={filters.q}
+              onChange={e => setFilter('q', e.target.value)}
+            />
+          </div>
+
+          {/* Location Filter */}
+          <div className="w-full lg:w-48 relative">
+            <select
+              className="w-full pl-4 pr-10 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none font-bold text-slate-700 appearance-none cursor-pointer text-sm focus:border-primary/30"
+              value={filters.location}
+              onChange={e => setFilter('location', e.target.value)}
+            >
+              <option value="">Any Location</option>
+              {meta.locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">location_on</span>
+          </div>
+
+          <button
+            onClick={clearFilters}
+            className="w-full lg:w-auto px-6 py-4 bg-rose-50 text-rose-500 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-rose-100 transition-all"
           >
-            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">expand_more</span>
+            Clear
+          </button>
         </div>
-        <button
-          onClick={() => setFilterOpen(o => !o)}
-          className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${filterOpen ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-        >
-          <span className="material-symbols-outlined text-[18px]">tune</span>
-          Filters
-          {activeFilterCount > 0 && <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${filterOpen ? 'bg-white text-primary' : 'bg-primary text-white'}`}>{activeFilterCount}</span>}
-        </button>
+
+        <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-50">
+          {/* Job Type Dropdown */}
+          <div className="relative">
+            <select
+              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none cursor-pointer text-xs"
+              value={filters.job_type}
+              onChange={e => setFilter('job_type', e.target.value)}
+            >
+              <option value="">All Job Types</option>
+              {JOB_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[16px]">expand_more</span>
+          </div>
+
+          {/* Experience Dropdown */}
+          <div className="relative">
+            <select
+              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none cursor-pointer text-xs"
+              value={filters.experience_level}
+              onChange={e => setFilter('experience_level', e.target.value)}
+            >
+              <option value="">All Experience Levels</option>
+              {EXP_LEVELS.map(l => <option key={l} value={l} className="capitalize">{l}-level</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[16px]">expand_more</span>
+          </div>
+
+          {/* Salary Preset Dropdown */}
+          <div className="relative">
+            <select
+              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600 appearance-none cursor-pointer text-xs"
+              value={salaryPreset}
+              onChange={e => handleSalaryPreset(parseInt(e.target.value))}
+            >
+              <option value="0">Any Salary</option>
+              {SALARY_PRESETS.slice(1).map((p, idx) => <option key={idx+1} value={idx+1}>{p.label}</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[16px]">payments</span>
+          </div>
+
+          <div className="ml-auto relative">
+            <select
+              className="pl-4 pr-10 py-2.5 bg-slate-900 text-white border-none rounded-xl outline-none font-bold appearance-none cursor-pointer text-[10px] uppercase tracking-widest"
+              value={filters.sort_by}
+              onChange={e => setFilter('sort_by', e.target.value)}
+            >
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none text-[16px]">sort</span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-8 items-start">
-        {/* Filter Sidebar */}
-        {filterOpen && (
-          <aside className="w-72 shrink-0 bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden animate-in slide-in-from-left-4 duration-300 sticky top-24">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-              <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest">Filters</h3>
-              {activeFilterCount > 0 && (
-                <button onClick={clearFilters} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Clear All</button>
-              )}
-            </div>
-            <div className="p-6 space-y-8">
-              {/* Job Type */}
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Job Type</p>
-                <div className="space-y-2">
-                  <button onClick={() => setFilter('job_type', '')} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${!filters.job_type ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>All Types</button>
-                  {JOB_TYPES.map(t => (
-                    <button key={t} onClick={() => setFilter('job_type', filters.job_type === t ? '' : t)} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filters.job_type === t ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>{t}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Experience */}
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Experience Level</p>
-                <div className="space-y-2">
-                  <button onClick={() => setFilter('experience_level', '')} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${!filters.experience_level ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>All Levels</button>
-                  {EXP_LEVELS.map(l => (
-                    <button key={l} onClick={() => setFilter('experience_level', filters.experience_level === l ? '' : l)} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filters.experience_level === l ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>{l}-level</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Salary */}
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Salary Range</p>
-                <div className="space-y-2">
-                  {SALARY_PRESETS.map((p, idx) => (
-                    <button key={idx} onClick={() => handleSalaryPreset(idx)} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${salaryPreset === idx ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>{p.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Location (dynamic from meta) */}
-              {meta.locations.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Location</p>
-                  <div className="space-y-2">
-                    <button onClick={() => setFilter('location', '')} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${!filters.location ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>Any Location</button>
-                    {meta.locations.slice(0, 8).map(loc => (
-                      <button key={loc} onClick={() => setFilter('location', filters.location === loc ? '' : loc)} className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${filters.location === loc ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 hover:bg-slate-50'}`}>{loc}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
-        )}
-
-        {/* Job Feed */}
-        <div className="flex-1 min-w-0 space-y-6">
+      <div className="w-full">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {Array.from({ length: 9 }).map((_, i) => <JobCardSkeleton key={i} />)}
@@ -342,7 +339,6 @@ export default function FindJobs() {
               )}
             </>
           )}
-        </div>
       </div>
     </div>
   );

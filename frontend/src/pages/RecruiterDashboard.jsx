@@ -8,26 +8,17 @@ export default function RecruiterDashboard() {
   const { user } = useContext(AuthContext);
   const [jobs, setJobs] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [stats, setStats] = useState({ active_jobs: 0, total_candidates: 0, avg_match_rate: '--%' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const jobsRes = await api.get('/jobs');
-        const myJobs = jobsRes.data.filter(job => job.recruiter_id === user?.id || job.recruiter_id === user?._id);
-        setJobs(myJobs);
-
-        // Fetch all candidates for all my jobs to build activity feed
-        let allApps = [];
-        for (const job of myJobs.slice(0, 5)) {
-          const appsRes = await api.get(`/jobs/${job._id || job.id}/candidates`);
-          // Add job name to each app for context
-          const appsWithJob = appsRes.data.map(app => ({ ...app, jobRole: job.role }));
-          allApps = [...allApps, ...appsWithJob];
-        }
-        // Sort by 'Applied' first or just most recent (simulation since we don't have per-app date in ranking)
-        setRecentActivity(allApps.slice(0, 5));
+        const res = await api.get('/recruiter/summary');
+        setJobs(res.data.jobs || []);
+        setRecentActivity(res.data.recent_activity || []);
+        setStats(res.data.stats || { active_jobs: 0, total_candidates: 0, avg_match_rate: '--%' });
       } catch (error) {
         console.error("Error fetching recruiter dashboard data:", error);
       } finally {
@@ -37,10 +28,8 @@ export default function RecruiterDashboard() {
     if (user) fetchData();
   }, [user]);
 
-  const totalApplicants = jobs.reduce((acc, job) => acc + (job.applicant_count || 0), 0);
-
-  // Calculate a real average match rate if applicants exist
-  const avgMatchRate = totalApplicants > 0 ? "76%" : "--%";
+  const totalApplicants = stats.total_candidates;
+  const avgMatchRate = stats.avg_match_rate;
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">

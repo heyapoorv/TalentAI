@@ -32,11 +32,6 @@ export default function HelpSupport() {
             <span className="material-symbols-outlined text-xl">psychology</span>
             AI Matching
           </button>
-          
-          <button className="w-full flex items-center gap-3 p-3 text-left text-slate-600 hover:bg-slate-50 rounded-lg font-label-md transition-colors">
-            <span className="material-symbols-outlined text-xl">payments</span>
-            Billing & Plans
-          </button>
         </div>
 
         {/* FAQs */}

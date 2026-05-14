@@ -20,7 +20,7 @@ else:
     llm_model = None
 
 def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
-    if not vec1 or not vec2:
+    if len(vec1) == 0 or len(vec2) == 0:
         return 0.0
     v1 = np.array(vec1)
     v2 = np.array(vec2)
@@ -70,7 +70,7 @@ async def generate_improvements(resume_text: str, job_description: str) -> dict:
     """
     try:
         try:
-            response = llm_model.generate_content(
+            response = await llm_model.generate_content_async(
                 prompt,
                 generation_config=genai.GenerationConfig(response_mime_type="application/json")
             )
@@ -78,7 +78,7 @@ async def generate_improvements(resume_text: str, job_description: str) -> dict:
             if "404" in str(e) or "not found" in str(e).lower():
                 print("Gemini 1.5 Flash not available, falling back to Gemini Pro...")
                 fallback_model = genai.GenerativeModel("gemini-pro")
-                response = fallback_model.generate_content(prompt)
+                response = await fallback_model.generate_content_async(prompt)
 
             else:
                 raise e
@@ -110,10 +110,11 @@ async def generate_improvements(resume_text: str, job_description: str) -> dict:
     except Exception as e:
         print(f"LLM Error: {e}")
         return {
-            "missing_skills": ["Technical leadership", "Unit testing", "Agile methodologies"],
-            "suggestions": ["Quantify your impact with data", "Highlight specific role-relevant projects"],
-            "strengths": ["Relevant industry background", "Core technical alignment"],
-            "weaknesses": ["Minor skill gaps identified", "Experience depth could be clearer"],
-            "interview_tips": ["Discuss specific technical challenges you solved", "Prepare to talk about team collaboration"],
-            "match_breakdown": {"skills": 70, "experience": 65, "education": 80}
+            "reasoning_score": 0.0,
+            "missing_skills": ["AI analysis failed or timed out"],
+            "suggestions": ["Please try refreshing the insights in a few moments."],
+            "strengths": ["Data unavailable"],
+            "weaknesses": ["Data unavailable"],
+            "interview_tips": ["Prepare based on standard industry requirements"],
+            "match_breakdown": {"skills": 0, "experience": 0, "education": 0}
         }

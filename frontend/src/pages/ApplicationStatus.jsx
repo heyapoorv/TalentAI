@@ -110,8 +110,8 @@ export default function ApplicationStatus() {
                       {new Date(app.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-10 py-8 text-right">
-                      <Link to={`/insights/${app._id || app.id}`} className="px-6 py-3 bg-white text-slate-600 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/20 hover:shadow-md transition-all">
-                        View AI Insights
+                      <Link to={`/insights/${app._id || app.id}`} className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 hover:bg-primary hover:text-white hover:border-primary transition-all inline-flex items-center justify-center group/btn" title="View AI Insights">
+                        <span className="material-symbols-outlined text-[20px] group-hover/btn:scale-110 transition-transform">insights</span>
                       </Link>
                     </td>
                   </tr>

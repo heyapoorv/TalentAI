@@ -113,9 +113,10 @@ const ResumeModal = ({ candidate, onClose }) => {
         <div className="p-6 border-t border-slate-100 bg-white flex items-center gap-3">
           <Link
             to={`/insights/${candidate.application_id}`}
-            className="flex-1 text-center py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all"
+            className="flex-1 flex items-center justify-center gap-3 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all group/btn"
           >
-            View Full AI Insights
+            <span className="material-symbols-outlined group-hover/btn:scale-125 transition-transform">insights</span>
+            AI Insights
           </Link>
         </div>
       </div>
