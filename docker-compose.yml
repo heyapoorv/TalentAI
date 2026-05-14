@@ -1,0 +1,100 @@
+# ==============================================================================
+# TalentAI — Docker Compose (Production)
+#
+# Services:  mongo | backend | frontend
+# Network:   talentai-net (internal bridge)
+#
+# Usage:
+#   docker compose up --build -d
+#   docker compose logs -f backend
+#   docker compose down -v   # ← also removes mongo volume
+# ==============================================================================
+
+version: "3.9"
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  mongo_data:          # Persistent MongoDB storage
+  chroma_data:         # ChromaDB vector store
+
+# ── Internal network ──────────────────────────────────────────────────────────
+networks:
+  talentai-net:
+    driver: bridge
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── MongoDB ─────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: talentai-mongo
+    restart: unless-stopped
+    networks: [talentai-net]
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: talentai
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    # Do NOT expose mongo port in production — only accessible within talentai-net
+    # ports: ["27017:27017"]  # Uncomment for local debugging only
+
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: talentai-backend
+    restart: unless-stopped
+    networks: [talentai-net]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - chroma_data:/app/chroma_db      # Persist vector store between restarts
+    env_file:
+      - ./backend/.env                  # Copy .env.template → .env and fill values
+    environment:
+      # These override .env values inside the container
+      MONGO_URL: mongodb://mongo:27017
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      ALLOWED_ORIGINS: "http://frontend,http://localhost"
+    ports:
+      - "8000:8000"                     # Expose to host; put behind reverse proxy in prod
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+  # ── React Frontend ───────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Points the compiled JS at the backend — adjust to your public domain
+        VITE_API_BASE_URL: http://localhost:8000/api
+    container_name: talentai-frontend
+    restart: unless-stopped
+    networks: [talentai-net]
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

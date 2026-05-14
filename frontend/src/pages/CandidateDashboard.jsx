@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import Skeleton from '../components/Skeleton';
 
 export default function CandidateDashboard() {
   const [applications, setApplications] = useState([]);
@@ -22,7 +23,7 @@ export default function CandidateDashboard() {
         setProfileHealth(healthRes.data);
 
         // Simple recommendation: Top 2 jobs (in real app, we'd use a match endpoint)
-        setRecommendedJobs(jobsRes.data.slice(0, 2));
+        setRecommendedJobs((jobsRes.data.jobs || []).slice(0, 2));
       } catch (error) {
         console.error("Error fetching candidate dashboard data:", error);
       } finally {
@@ -73,17 +74,27 @@ export default function CandidateDashboard() {
 
       {/* Real-time Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-500 group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 100}ms` }}>
-            <div className={`w-14 h-14 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
-              <span className="material-symbols-outlined text-3xl font-bold">{stat.icon}</span>
+        {loading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
+              <Skeleton className="w-14 h-14 rounded-2xl mb-6" />
+              <Skeleton className="h-10 w-24 mb-2" />
+              <Skeleton className="h-3 w-32" />
             </div>
-            <div>
-              <p className="text-4xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">{stat.label}</p>
+          ))
+        ) : (
+          stats.map((stat, i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm hover:shadow-xl transition-all duration-500 group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className={`w-14 h-14 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                <span className="material-symbols-outlined text-3xl font-bold">{stat.icon}</span>
+              </div>
+              <div>
+                <p className="text-4xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">{stat.label}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Activity and Status Tracking */}
@@ -99,9 +110,19 @@ export default function CandidateDashboard() {
 
           <div className="bg-white border border-slate-100 rounded-[2.5rem] shadow-sm overflow-hidden p-6">
             {loading ? (
-              <div className="p-20 text-center flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Hydrating Dashboard...</p>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-6 bg-slate-50/50 rounded-2xl">
+                    <div className="flex items-center gap-6">
+                      <Skeleton className="w-14 h-14 rounded-xl" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-48" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="w-10 h-10 rounded-xl" />
+                  </div>
+                ))}
               </div>
             ) : applications.length === 0 ? (
               <div className="p-16 text-center flex flex-col items-center gap-6">

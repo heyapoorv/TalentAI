@@ -28,7 +28,7 @@ async def seed():
         "name": "Sarah Recruiter",
         "email": "sarah@techcorp.com",
         "password": recruiter_password,
-        "role": "Recruiter",
+        "role": "recruiter",
     }
     r_res = await db.users.insert_one(recruiter)
     recruiter_id = str(r_res.inserted_id)
@@ -37,13 +37,13 @@ async def seed():
         "name": "John Doe",
         "email": "john@example.com",
         "password": candidate_password,
-        "role": "Candidate",
+        "role": "candidate",
     }
     candidate2 = {
         "name": "Alice Smith",
         "email": "alice@example.com",
         "password": candidate_password,
-        "role": "Candidate",
+        "role": "candidate",
     }
     
     c1_res = await db.users.insert_one(candidate1)

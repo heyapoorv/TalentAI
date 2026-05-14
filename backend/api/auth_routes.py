@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from db.database import get_db
 from models import schemas
 from services.auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
+from models.schemas import UserUpdateRequest
 from datetime import timedelta
 import datetime
 import logging
@@ -19,6 +20,7 @@ async def register(user: schemas.UserCreate, db = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Email already registered")
             
         user_dict = user.dict()
+        user_dict["role"] = user_dict["role"].lower()
         # Add password hash
         user_dict["hashed_password"] = get_password_hash(user.password)
         # Remove raw password from dict to avoid saving it
@@ -62,14 +64,18 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 @router.put("/me", response_model=schemas.UserResponse)
-async def update_me(user_update: dict, db = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def update_me(
+    user_update: UserUpdateRequest,
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     try:
-        # Prevent changing email or role for security
-        update_data = {k: v for k, v in user_update.items() if k not in ["email", "role", "_id", "hashed_password"]}
-        
+        # .dict(exclude_none=True) — only include fields the user actually sent
+        update_data = user_update.dict(exclude_none=True)
+
         if not update_data:
             return current_user
-            
+
         from pymongo import ReturnDocument
         result = await db.users.find_one_and_update(
             {"_id": current_user["_id"]},

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
+import Skeleton from '../components/Skeleton';
 
 export default function RecruiterDashboard() {
   const { user } = useContext(AuthContext);
@@ -60,21 +61,31 @@ export default function RecruiterDashboard() {
 
       {/* Dynamic Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          { label: 'Active Jobs', value: jobs.length, icon: 'work', color: 'indigo' },
-          { label: 'Total Candidates', value: totalApplicants, icon: 'group', color: 'blue' },
-          { label: 'Avg Match Rate', value: avgMatchRate, icon: 'analytics', color: 'amber' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 100}ms` }}>
-            <div className={`w-14 h-14 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
-              <span className="material-symbols-outlined text-3xl font-bold">{stat.icon}</span>
+        {loading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm">
+              <Skeleton className="w-14 h-14 rounded-2xl mb-6" />
+              <Skeleton className="h-10 w-24 mb-2" />
+              <Skeleton className="h-3 w-32" />
             </div>
-            <div>
-              <p className="text-4xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
-              <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">{stat.label}</p>
+          ))
+        ) : (
+          [
+            { label: 'Active Jobs', value: jobs.length, icon: 'work', color: 'indigo' },
+            { label: 'Total Candidates', value: totalApplicants, icon: 'group', color: 'blue' },
+            { label: 'Avg Match Rate', value: avgMatchRate, icon: 'analytics', color: 'amber' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className={`w-14 h-14 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                <span className="material-symbols-outlined text-3xl font-bold">{stat.icon}</span>
+              </div>
+              <div>
+                <p className="text-4xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">{stat.label}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -89,9 +100,16 @@ export default function RecruiterDashboard() {
 
           <div className="bg-white border border-slate-100 rounded-[2.5rem] shadow-sm overflow-hidden">
             {loading ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Updating Pipeline...</p>
+              <div className="p-8 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between items-center py-4 border-b border-slate-50 last:border-0">
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-8 w-20 rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="overflow-x-auto">

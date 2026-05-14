@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+!.env.template
+chroma_db/
+*.log
+.pytest_cache/
+.mypy_cache/
+dist/

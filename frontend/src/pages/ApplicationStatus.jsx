@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import Skeleton from '../components/Skeleton';
 
 export default function ApplicationStatus() {
   const [applications, setApplications] = useState([]);
@@ -43,9 +44,22 @@ export default function ApplicationStatus() {
       {/* Main Content */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] shadow-sm overflow-hidden">
         {loading ? (
-          <div className="py-40 flex flex-col items-center justify-center gap-6">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">Assembling History</p>
+          <div className="p-10 space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between py-6 border-b border-slate-50 last:border-0">
+                <div className="flex items-center gap-6">
+                  <Skeleton className="w-14 h-14 rounded-2xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-24 rounded-xl" />
+                <Skeleton className="h-10 w-32 rounded-xl" />
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-28 rounded-xl" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="overflow-x-auto">

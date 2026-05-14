@@ -30,18 +30,15 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(sha256_hash)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
     sha256_hash = hashlib.sha256(plain_password.encode()).hexdigest()
-    
-    # New method
-    if pwd_context.verify(sha256_hash, hashed_password):
-        return True
-    
-    # Fallback for old passwords
     try:
-        return pwd_context.verify(plain_password[:72], hashed_password)
-    except:
-        return False
+        return pwd_context.verify(sha256_hash, hashed_password)
+    except Exception:
+        # Fallback for legacy passwords hashed without SHA-256 pre-processing
+        try:
+            return pwd_context.verify(plain_password[:72], hashed_password)
+        except Exception:
+            return False
 
 
 # ==============================
@@ -145,7 +142,7 @@ def recruiter_only(user=Depends(get_current_user)):
 async def login_user(email: str, password: str, db):
     user = await db.users.find_one({"email": email})
 
-    if not user or not verify_password(password, user["password"]):
+    if not user or not verify_password(password, user.get("hashed_password", "")):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     user_id = str(user["_id"])

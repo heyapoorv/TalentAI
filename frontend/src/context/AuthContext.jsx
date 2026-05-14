@@ -8,14 +8,33 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on mount
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const validateSession = async () => {
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+
+      if (!token || !storedUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Validate token is still accepted by the server
+        const res = await api.get('/auth/me');
+        // Merge server data with stored data for freshness
+        const serverUser = res.data;
+        const merged = { ...JSON.parse(storedUser), name: serverUser.name, email: serverUser.email, role: serverUser.role };
+        localStorage.setItem('user', JSON.stringify(merged));
+        setUser(merged);
+      } catch {
+        // Token invalid or expired — clear and force re-login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    validateSession();
   }, []);
 
   const login = async (email, password) => {
