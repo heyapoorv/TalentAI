@@ -328,7 +328,12 @@ async def get_my_applications(db = Depends(get_db), current_user: dict = Depends
         raise HTTPException(status_code=500, detail="An internal server error occurred while fetching your applications.")
 
 @router.get("/applications/{application_id}/insights", response_model=schemas.MatchResult)
-async def get_application_insights(application_id: str, db = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def get_application_insights(
+    application_id: str,
+    recalculate: Optional[bool] = Query(None),
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     try:
         try:
             app_oid = ObjectId(application_id)
@@ -367,20 +372,22 @@ async def get_application_insights(application_id: str, db = Depends(get_db), cu
             except Exception as e:
                 logger.error(f"Failed to auto-recalculate score: {e}")
 
-        # Cache Check: If AI analysis was already performed, return cached data
-        if "ai_analysis" in app:
+        # Cache Check: If AI analysis was already performed and succeeded, return cached data
+        if "ai_analysis" in app and not recalculate:
             cached = app["ai_analysis"]
-            return schemas.MatchResult(
-                match_score=app.get("match_score", 0.0),
-                missing_skills=cached.get("missing_skills", []),
-                suggestions=cached.get("suggestions", []),
-                strengths=cached.get("strengths", []),
-                weaknesses=cached.get("weaknesses", []),
-                interview_tips=cached.get("interview_tips", []),
-                match_breakdown=cached.get("match_breakdown", {"skills": 0, "experience": 0, "education": 0}),
-                job_role=job.get("role", "Unknown Role") if job else "Unknown Role",
-                status=app.get("status", "Applied")
-            )
+            # Only return cached data if it was a successful analysis
+            if not any(err in cached.get("missing_skills", []) for err in ["AI analysis failed or timed out", "Model not configured"]):
+                return schemas.MatchResult(
+                    match_score=app.get("match_score", 0.0),
+                    missing_skills=cached.get("missing_skills", []),
+                    suggestions=cached.get("suggestions", []),
+                    strengths=cached.get("strengths", []),
+                    weaknesses=cached.get("weaknesses", []),
+                    interview_tips=cached.get("interview_tips", []),
+                    match_breakdown=cached.get("match_breakdown", {"skills": 0, "experience": 0, "education": 0}),
+                    job_role=job.get("role", "Unknown Role") if job else "Unknown Role",
+                    status=app.get("status", "Applied")
+                )
 
         resume_data = json.loads(resume["parsed_data"]) if resume and "parsed_data" in resume else {}
         if isinstance(resume_data, str):
@@ -549,6 +556,8 @@ async def get_job_applicants(
                 "applied_at": app.get("created_at", "").isoformat() if app.get("created_at") else "",
                 "resume_preview": resume_preview,
                 "resume_skills": resume_skills[:10],
+                "hiring_recommendation": app.get("hiring_recommendation"),
+                "ranking_explanation": app.get("ranking_explanation")
             })
 
         return results
@@ -577,6 +586,100 @@ async def get_profile_health(db = Depends(get_db), current_user: dict = Depends(
     except Exception as e:
         logger.error(f"Error fetching profile health: {e}")
         return {"score": 0, "status": "Error", "suggestions": "Could not calculate health."}
+
+# --- Recruiter Intelligence Suite ---
+@router.post("/jobs/{job_id}/compare", response_model=schemas.CandidateComparisonResponse)
+async def compare_candidates_route(job_id: str, payload: schemas.CandidateComparisonRequest, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    try:
+        from services.recruiter_intelligence import compare_candidates
+        return await compare_candidates(job_id, payload.application_ids, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error comparing candidates: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while comparing candidates.")
+
+@router.get("/applications/{application_id}/recommendation", response_model=schemas.HiringRecommendation)
+async def get_hiring_recommendation(application_id: str, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    try:
+        from services.recruiter_intelligence import generate_hiring_recommendation
+        
+        # Check if already generated
+        app = await db.applications.find_one({"_id": ObjectId(application_id)})
+        if app and "hiring_recommendation" in app:
+            return app["hiring_recommendation"]
+            
+        return await generate_hiring_recommendation(application_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating recommendation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/applications/{application_id}/scorecard", response_model=schemas.InterviewScorecardResponse)
+async def get_interview_scorecard(application_id: str, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    try:
+        from services.recruiter_intelligence import generate_interview_scorecard
+        return await generate_interview_scorecard(application_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating scorecard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/applications/{application_id}/explanation", response_model=schemas.RankingExplanationResponse)
+async def get_ranking_explanation(application_id: str, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    try:
+        from services.recruiter_intelligence import explain_ranking
+        
+        # Check if already generated
+        app = await db.applications.find_one({"_id": ObjectId(application_id)})
+        if app and "ranking_explanation" in app:
+            return app["ranking_explanation"]
+            
+        return await explain_ranking(application_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error explaining ranking: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/applications/{application_id}/scorecard", status_code=200)
+async def save_interview_scorecard(application_id: str, payload: schemas.ScorecardEvaluationSaveRequest, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+    try:
+        result = await db.applications.update_one(
+            {"_id": ObjectId(application_id)},
+            {"$set": {
+                "scorecard_evaluation": {
+                    "scores": payload.scores,
+                    "notes": payload.notes,
+                    "total_score": payload.total_score,
+                    "max_possible": payload.max_possible,
+                    "evaluated_by": str(current_user["_id"]),
+                    "evaluated_at": datetime.datetime.utcnow()
+                }
+            }}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Application not found.")
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving scorecard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# --- Resume Optimizer ---
+@router.post("/resume/optimize", response_model=schemas.ResumeOptimizationResponse)
+async def optimize_resume_route(payload: schemas.ResumeOptimizationRequest, db = Depends(get_db), current_user: dict = Depends(candidate_only)):
+    try:
+        from services.resume_optimizer import optimize_resume
+        return await optimize_resume(str(current_user["_id"]), payload.job_description, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error optimizing resume: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # --- Notifications ---
 @router.get("/notifications", response_model=List[schemas.NotificationResponse])

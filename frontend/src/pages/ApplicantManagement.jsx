@@ -132,10 +132,12 @@ export default function ApplicantManagement() {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(preselectedJobId || '');
   const [applicants, setApplicants] = useState([]);
+  const [selectedApplicants, setSelectedApplicants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [sortBy, setSortBy] = useState('match_score');
   const [previewCandidate, setPreviewCandidate] = useState(null);
+  const [explanationCandidate, setExplanationCandidate] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -155,6 +157,7 @@ export default function ApplicantManagement() {
   const fetchApplicants = useCallback(async () => {
     if (!selectedJobId) return;
     setLoading(true);
+    setSelectedApplicants([]);
     try {
       const res = await api.get(`/jobs/${selectedJobId}/applicants?sort_by=${sortBy}`);
       setApplicants(res.data);
@@ -166,6 +169,12 @@ export default function ApplicantManagement() {
   }, [selectedJobId, sortBy]);
 
   useEffect(() => { fetchApplicants(); }, [fetchApplicants]);
+
+  const toggleSelection = (appId) => {
+    setSelectedApplicants(prev => 
+      prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]
+    );
+  };
 
   const handleStatusChange = async (applicationId, newStatus) => {
     setUpdatingStatus(applicationId);
@@ -198,6 +207,48 @@ export default function ApplicantManagement() {
       )}
 
       <ResumeModal candidate={previewCandidate} onClose={() => setPreviewCandidate(null)} />
+
+      {/* Explanation Modal */}
+      {explanationCandidate && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setExplanationCandidate(null)}>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl p-8 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-2xl">psychology</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900">AI Ranking Explanation</h3>
+                <p className="text-slate-500 text-sm">For {explanationCandidate.name}</p>
+              </div>
+            </div>
+            
+            {explanationCandidate.ranking_explanation ? (
+              <div className="space-y-4">
+                <p className="text-slate-700 leading-relaxed font-medium">
+                  {explanationCandidate.ranking_explanation.rank_rationale}
+                </p>
+                <div className="bg-emerald-50 text-emerald-800 p-4 rounded-2xl border border-emerald-100">
+                  <p className="text-xs font-black uppercase tracking-widest mb-2">Satisfied Requirements</p>
+                  <ul className="list-disc list-inside text-sm font-medium">
+                    {explanationCandidate.ranking_explanation.satisfied_requirements.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+                <div className="bg-rose-50 text-rose-800 p-4 rounded-2xl border border-rose-100">
+                  <p className="text-xs font-black uppercase tracking-widest mb-2">Missing Requirements</p>
+                  <ul className="list-disc list-inside text-sm font-medium">
+                    {explanationCandidate.ranking_explanation.missing_requirements.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p className="text-slate-500 italic text-center py-8">Explanation not yet generated for this candidate.</p>
+            )}
+            
+            <button onClick={() => setExplanationCandidate(null)} className="mt-6 w-full py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Close</button>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm relative overflow-hidden group">
@@ -259,6 +310,28 @@ export default function ApplicantManagement() {
         </div>
       </div>
 
+      {/* Compare Bar */}
+      {selectedApplicants.length > 0 && (
+        <div className="bg-indigo-600 text-white rounded-2xl p-4 shadow-lg flex items-center justify-between sticky top-24 z-40 animate-in slide-in-from-bottom-10">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-3xl">compare_arrows</span>
+            <div>
+              <p className="font-black text-lg">{selectedApplicants.length} Candidates Selected</p>
+              <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest">For Comparison Engine</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSelectedApplicants([])} className="px-4 py-2 text-indigo-200 hover:text-white font-bold text-sm">Clear</button>
+            <Link 
+              to={`/compare?jobId=${selectedJobId}&apps=${selectedApplicants.join(',')}`}
+              className={`px-6 py-3 bg-white text-indigo-600 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm transition-all hover:scale-105 ${selectedApplicants.length < 2 || selectedApplicants.length > 5 ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              {selectedApplicants.length < 2 ? 'Select at least 2' : selectedApplicants.length > 5 ? 'Max 5 allowed' : 'Compare Candidates'}
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Stats bar */}
       {!loading && applicants.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -306,8 +379,14 @@ export default function ApplicantManagement() {
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 {/* Top row */}
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 relative">
                   <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => toggleSelection(candidate.application_id)}
+                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${selectedApplicants.includes(candidate.application_id) ? 'bg-primary border-primary text-white' : 'border-slate-300 text-transparent hover:border-primary/50'}`}
+                    >
+                      <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+                    </button>
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-indigo-100 flex items-center justify-center text-primary font-black text-lg shrink-0">
                       {candidate.name.charAt(0)}
                     </div>
@@ -322,6 +401,17 @@ export default function ApplicantManagement() {
                     {candidate.fit_badge}
                   </span>
                 </div>
+
+                {/* AI Recommendation Badge */}
+                {candidate.hiring_recommendation && (
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[18px] ${candidate.hiring_recommendation.recommendation.includes('Yes') ? 'text-emerald-500' : candidate.hiring_recommendation.recommendation === 'Maybe' ? 'text-amber-500' : 'text-rose-500'}`}>psychology</span>
+                      <span className="text-xs font-bold text-slate-700">AI Verdict: <span className="text-slate-900 font-black">{candidate.hiring_recommendation.recommendation}</span></span>
+                    </div>
+                    <button onClick={() => setExplanationCandidate(candidate)} className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">Why?</button>
+                  </div>
+                )}
 
                 {/* Score bar */}
                 <div className="space-y-1.5">
@@ -372,6 +462,13 @@ export default function ApplicantManagement() {
                   >
                     <span className="material-symbols-outlined text-[18px]">person_search</span>
                   </button>
+                  <Link
+                    to={`/scorecard/${candidate.application_id}`}
+                    className="p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 hover:bg-primary hover:text-white hover:border-primary transition-all"
+                    title="Interview Scorecard"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">fact_check</span>
+                  </Link>
                   <Link
                     to={`/insights/${candidate.application_id}`}
                     className="p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 hover:bg-primary hover:text-white hover:border-primary transition-all"

@@ -9,7 +9,8 @@ export default function Profile() {
     name: '',
     location: '',
     bio: '',
-    portfolio_url: ''
+    portfolio_url: '',
+    photo_url: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -20,7 +21,8 @@ export default function Profile() {
         name: user.name || '',
         location: user.location || '',
         bio: user.bio || '',
-        portfolio_url: user.portfolio_url || ''
+        portfolio_url: user.portfolio_url || '',
+        photo_url: user.photo_url || ''
       });
     }
   }, [user]);
@@ -47,8 +49,44 @@ export default function Profile() {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setMessage({ type: 'success', text: 'Photo updated! (Simulation)' });
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result;
+        setLoading(true);
+        setMessage(null);
+        try {
+          const updatedData = { ...formData, photo_url: base64String };
+          const response = await api.put('/auth/me', updatedData);
+          setUser(response.data);
+          setFormData(prev => ({ ...prev, photo_url: base64String }));
+          setMessage({ type: 'success', text: 'Profile photo updated!' });
+          setTimeout(() => setMessage(null), 3000);
+        } catch (error) {
+          console.error("Error updating photo:", error);
+          setMessage({ type: 'error', text: 'Failed to upload photo.' });
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const updatedData = { ...formData, photo_url: '' };
+      const response = await api.put('/auth/me', updatedData);
+      setUser(response.data);
+      setFormData(prev => ({ ...prev, photo_url: '' }));
+      setMessage({ type: 'success', text: 'Profile photo deleted!' });
       setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error("Error deleting photo:", error);
+      setMessage({ type: 'error', text: 'Failed to delete photo.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,7 +125,7 @@ export default function Profile() {
       <div className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm flex items-center gap-8 group">
         <div className="relative">
           <div className="w-28 h-28 rounded-3xl overflow-hidden border-4 border-slate-50 shadow-inner group-hover:rotate-3 transition-transform duration-500">
-            <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&size=200`} alt="Profile" className="w-full h-full object-cover" />
+            <img src={formData.photo_url || `https://ui-avatars.com/api/?name=${userName}&background=random&size=200`} alt="Profile" className="w-full h-full object-cover" />
           </div>
           <button 
             onClick={() => document.getElementById('photo-upload').click()}
@@ -106,7 +144,14 @@ export default function Profile() {
             >
               Change Photo
             </label>
-            <button className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-700 transition-colors">Delete</button>
+            {formData.photo_url && (
+              <button 
+                onClick={handlePhotoDelete}
+                className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-700 transition-colors"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "q1",
+    "query": "Which candidate has experience with React and Tailwind CSS?",
+    "expected_document_ids": ["john_doe_resume"],
+    "expected_answer": "John Doe has 5 years of experience building React applications and is skilled in Tailwind CSS, Redux, and TypeScript.",
+    "expected_citations": ["John Doe Resume"]
+  },
+  {
+    "id": "q2",
+    "query": "Who has experience with PyTorch, TensorFlow, and a Ph.D. in Computer Science?",
+    "expected_document_ids": ["alice_smith_resume"],
+    "expected_answer": "Alice Smith has built production LLMs and computer vision models using PyTorch and TensorFlow, and holds a Ph.D. in Computer Science.",
+    "expected_citations": ["Alice Smith Resume"]
+  },
+  {
+    "id": "q3",
+    "query": "What skills are required for the Senior Frontend Developer job?",
+    "expected_document_ids": ["job_senior_frontend_dev"],
+    "expected_answer": "The Senior Frontend Developer job requires React, JavaScript, Tailwind CSS, and Redux, with experience in modern JS and state management.",
+    "expected_citations": ["Senior Frontend Developer JD"]
+  },
+  {
+    "id": "q4",
+    "query": "Who is suitable for the AI Machine Learning Engineer position?",
+    "expected_document_ids": ["alice_smith_resume"],
+    "expected_answer": "Alice Smith is highly suitable as she is an AI Researcher and ML Engineer who has built production LLMs using PyTorch and TensorFlow.",
+    "expected_citations": ["Alice Smith Resume"]
+  }
+]

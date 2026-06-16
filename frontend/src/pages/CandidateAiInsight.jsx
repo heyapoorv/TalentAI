@@ -179,7 +179,7 @@ export default function CandidateAiInsight() {
         
         {/* Strengths Section */}
         <div className="lg:col-span-8 bg-white border border-slate-100 p-10 rounded-[3rem] shadow-sm animate-in fade-in slide-in-from-right-10 duration-700">
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm">
                 <span className="material-symbols-outlined text-2xl">verified</span>
@@ -190,53 +190,81 @@ export default function CandidateAiInsight() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
             {(insight.strengths && insight.strengths.length > 0 ? insight.strengths : ["Technical Proficiency", "Problem Solving", "Experience Depth"]).map((strength, i) => (
-              <div key={i} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 hover:bg-white hover:border-primary/20 hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 group">
-                <div className="flex items-start gap-4">
-                  <div className="mt-1.5 w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0 group-hover:scale-150 transition-transform shadow-lg shadow-emerald-200"></div>
-                  <div>
-                    <h4 className="font-black text-slate-900 mb-2 tracking-tight text-base">{strength}</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed font-medium">Profile data validates strong competency in this domain relative to standard benchmarks.</p>
-                  </div>
+              <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:bg-white hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-50/50 transition-all duration-300 group flex items-start gap-4">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800 leading-relaxed">{transformPerspective(strength)}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
-        {/* Missing Skills Card */}
-        <div className="lg:col-span-6 bg-white border border-slate-100 p-10 rounded-[3rem] shadow-sm animate-in slide-in-from-bottom-10 duration-700 flex flex-col">
-          <div className="flex items-center gap-4 mb-8">
-             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shadow-sm">
-                <span className="material-symbols-outlined text-2xl">error_med</span>
+
+        {/* Critical Gaps & Weaknesses */}
+        <div className="lg:col-span-8 bg-white border border-slate-100 p-10 rounded-[3rem] shadow-sm animate-in fade-in slide-in-from-left-10 duration-700">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-sm">
+                <span className="material-symbols-outlined text-2xl">warning</span>
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Gaps & Risk Areas</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Areas for improvement</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Critical Gaps</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Risks & Gaps identified by AI</p>
               </div>
-          </div>
-          <div className="flex flex-wrap gap-3 mb-10">
-            {insight.missing_skills?.length > 0 ? insight.missing_skills.map((skill, i) => (
-              <span key={i} className="px-5 py-2.5 bg-rose-50/50 text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 border border-rose-100">
-                <span className="material-symbols-outlined text-[18px]">block</span>
-                {skill}
-              </span>
-            )) : (
-              <div className="flex items-center gap-3 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 w-full">
-                <span className="material-symbols-outlined text-emerald-600">check_circle</span>
-                <span className="text-sm font-bold text-emerald-700">All core technical requirements are met.</span>
-              </div>
-            )}
-          </div>
-          <div className="mt-auto p-6 bg-indigo-50 border border-indigo-100 rounded-3xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-125 transition-transform duration-700">
-              <span className="material-symbols-outlined text-[80px] text-primary">lightbulb_circle</span>
             </div>
-            <div className="flex gap-4 relative z-10">
-              <span className="material-symbols-outlined text-primary font-black">tips_and_updates</span>
+          </div>
+          <div className="space-y-4">
+            {(insight.weaknesses && insight.weaknesses.length > 0 ? insight.weaknesses : ["Gaps in required domain experience", "Limited evidence of cloud scale infrastructure deployment", "Certain nice-to-have tools not specified"]).map((weakness, i) => (
+              <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:bg-white hover:border-amber-200 hover:shadow-xl hover:shadow-amber-50/50 transition-all duration-300 group flex items-start gap-4">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-[18px]">report</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800 leading-relaxed">{transformPerspective(weakness)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Missing Skills Card */}
+        <div className="lg:col-span-4 bg-white border border-slate-100 p-10 rounded-[3rem] shadow-sm animate-in slide-in-from-bottom-10 duration-700 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-4 mb-8">
+               <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shadow-sm">
+                  <span className="material-symbols-outlined text-2xl">error_med</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Missing Skills</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Required tech stack gaps</p>
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2.5 mb-8">
+              {insight.missing_skills?.length > 0 ? insight.missing_skills.map((skill, i) => (
+                <span key={i} className="px-4 py-2 bg-rose-50/50 text-rose-600 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border border-rose-100">
+                  <span className="material-symbols-outlined text-[16px]">block</span>
+                  {skill}
+                </span>
+              )) : (
+                <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 w-full">
+                  <span className="material-symbols-outlined text-emerald-600 text-lg">check_circle</span>
+                  <span className="text-xs font-bold text-emerald-700">All core technical requirements met.</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl relative overflow-hidden group mt-auto">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform duration-700">
+              <span className="material-symbols-outlined text-[60px] text-primary">lightbulb_circle</span>
+            </div>
+            <div className="flex gap-3 relative z-10">
+              <span className="material-symbols-outlined text-primary font-black text-lg">tips_and_updates</span>
               <div>
-                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">AI Recommendation</p>
+                <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-0.5">Top Recommendation</p>
                 <p className="text-xs text-slate-700 font-bold leading-relaxed italic">
                   "{insight.suggestions?.[0] || "Consider highlighting related projects to bridge identified skill gaps."}"
                 </p>

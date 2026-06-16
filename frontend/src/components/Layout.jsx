@@ -24,7 +24,9 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', icon: 'dashboard', path: '/recruiter-dashboard' },
     { name: 'Jobs', icon: 'work', path: '/recruiter-jobs' },
     { name: 'Applicants', icon: 'group', path: '/applicants' },
+    { name: 'AI Copilot', icon: 'support_agent', path: '/recruiter-copilot' },
     { name: 'Post Job', icon: 'add_box', path: '/jobs/new' },
+    { name: 'Observability', icon: 'monitoring', path: '/admin/observability' },
   ];
 
   const candidateLinks = [
@@ -32,6 +34,7 @@ const Layout = ({ children }) => {
     { name: 'Resume', icon: 'description', path: '/upload-resume' },
     { name: 'Jobs', icon: 'work', path: '/jobs' },
     { name: 'Applications', icon: 'send', path: '/applications' },
+    { name: 'AI Copilot', icon: 'smart_toy', path: '/copilot' },
   ];
 
   const links = isRecruiter ? recruiterLinks : candidateLinks;

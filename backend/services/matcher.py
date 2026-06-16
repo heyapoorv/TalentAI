@@ -3,21 +3,14 @@ import google.generativeai as genai
 import os
 import json
 
+from services.generation import get_gemini_model
+
 # Setup Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    try:
-        llm_model = genai.GenerativeModel("gemini-1.5-flash")
-    except Exception:
-        try:
-            llm_model = genai.GenerativeModel("gemini-pro")
-        except Exception:
-            llm_model = genai.GenerativeModel("gemini-1.0-pro")
-
-
-else:
-    llm_model = None
+llm_model = get_gemini_model("gemini-2.5-flash")
+if not llm_model:
+    llm_model = get_gemini_model("gemini-2.5-pro")
+    if not llm_model:
+        llm_model = get_gemini_model("gemini-flash-latest")
 
 def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
     if len(vec1) == 0 or len(vec2) == 0:
@@ -76,10 +69,9 @@ async def generate_improvements(resume_text: str, job_description: str) -> dict:
             )
         except Exception as e:
             if "404" in str(e) or "not found" in str(e).lower():
-                print("Gemini 1.5 Flash not available, falling back to Gemini Pro...")
-                fallback_model = genai.GenerativeModel("gemini-pro")
+                print("Gemini 2.5 Flash not available, falling back to Gemini 2.5 Pro...")
+                fallback_model = get_gemini_model("gemini-2.5-pro")
                 response = await fallback_model.generate_content_async(prompt)
-
             else:
                 raise e
                 

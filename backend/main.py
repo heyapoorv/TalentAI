@@ -13,10 +13,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from db.database import db, MONGO_URL, DB_NAME
 from api.routes import router as main_router
 from api.auth_routes import router as auth_router
+from api.copilot_routes import router as copilot_router
+from api.admin_routes import router as admin_router
 from middleware.logging_middleware import configure_logging, RequestLoggingMiddleware
 from middleware.rate_limit import RateLimitMiddleware
 from middleware.security import SecurityHeadersMiddleware
 from services.embedding import load_model
+from services import versioning, observability
 
 # ── Bootstrap logging before anything else ───────────────────────────────────
 configure_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -34,6 +37,13 @@ ALLOWED_ORIGINS = [o.strip() for o in os.getenv(
 async def lifespan(app: FastAPI):
     logger.info("startup_begin", extra={"environment": ENVIRONMENT})
     try:
+        # Validate critical environment variables
+        required_envs = ["MONGO_URL", "JWT_SECRET", "GEMINI_API_KEY"]
+        missing_envs = [env for env in required_envs if not os.getenv(env)]
+        if missing_envs:
+            logger.error("missing_environment_variables", extra={"missing": missing_envs})
+            raise RuntimeError(f"Missing required environment variables: {', '.join(missing_envs)}")
+
         # MongoDB
         db.client   = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000)
         db.database = db.client[DB_NAME]
@@ -47,11 +57,20 @@ async def lifespan(app: FastAPI):
 
         # Ensure collections
         existing  = await db.database.list_collection_names()
-        required  = ["users", "resumes", "jobs", "applications", "notifications"]
+        required  = [
+            "users", "resumes", "jobs", "applications", "notifications",
+            "copilot_sessions", "copilot_messages",
+            "ai_versions", "reprocessing_jobs", "metrics",
+        ]
         for col in required:
             if col not in existing:
                 await db.database.create_collection(col)
                 logger.info("collection_created", extra={"collection": col})
+
+        # Initialize services
+        versioning.set_db(db.database)
+        observability.set_db(db.database)
+        await observability.ensure_metrics_indexes(db.database)
 
         # ── MongoDB indexes ────────────────────────────────────────────────
         # Users
@@ -80,6 +99,14 @@ async def lifespan(app: FastAPI):
         # Notifications
         await db.database.notifications.create_index([("user_id", 1), ("created_at", -1)])
         await db.database.notifications.create_index([("user_id", 1), ("is_read", 1)])
+
+        # Copilot sessions & messages
+        await db.database.copilot_sessions.create_index([("user_id", 1), ("updated_at", -1)])
+        await db.database.copilot_messages.create_index([("session_id", 1), ("created_at", 1)])
+        await db.database.copilot_messages.create_index("user_id")
+
+        # Workspace RAG removed in audit
+
 
         logger.info("indexes_ensured")
     except Exception as exc:
@@ -146,13 +173,22 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         },
         exc_info=exc,
     )
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={
             "detail":     "An unexpected error occurred. Please try again later.",
             "request_id": request_id,
         },
     )
+    
+    # Record to observability
+    try:
+        from services.observability import record_error
+        record_error(error_type=type(exc).__name__, path=request.url.path, message=str(exc))
+    except Exception:
+        pass
+    
+    return response
 
 
 @app.exception_handler(ValueError)
@@ -164,8 +200,10 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-app.include_router(main_router, prefix="/api",      tags=["core"])
+app.include_router(auth_router,    prefix="/api/auth",      tags=["auth"])
+app.include_router(main_router,    prefix="/api",            tags=["core"])
+app.include_router(copilot_router, prefix="/api/copilot",   tags=["copilot"])
+app.include_router(admin_router)
 
 
 # ── Health + Root ─────────────────────────────────────────────────────────────
@@ -178,6 +216,8 @@ async def root():
 async def health_check():
     """Liveness probe — used by Docker / load balancers."""
     try:
+        if not db.client:
+            raise RuntimeError("Database client not initialized")
         await db.client.admin.command("ping")
         return {"status": "healthy", "database": "connected"}
     except Exception as exc:

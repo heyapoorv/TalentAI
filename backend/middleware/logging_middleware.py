@@ -92,6 +92,31 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             },
         )
 
+        # ── Send to Observability ──────────────────────────────────────────────
+        user_id = None
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            try:
+                import jwt
+                payload = jwt.decode(token, options={"verify_signature": False})
+                user_id = payload.get("sub")
+            except Exception:
+                pass
+
+        try:
+            from services.observability import record_api_request
+            record_api_request(
+                path=request.url.path,
+                method=request.method,
+                status_code=response.status_code,
+                latency_ms=duration_ms,
+                user_id=user_id,
+            )
+        except Exception:
+            pass
+        # ───────────────────────────────────────────────────────────────────────
+
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Response-Time"] = f"{duration_ms}ms"
         return response

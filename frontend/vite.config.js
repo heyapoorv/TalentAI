@@ -29,10 +29,10 @@ export default defineConfig(({ mode }) => {
 
       rollupOptions: {
         output: {
-          // Split vendor code into separate chunk for better caching
-          manualChunks: {
-            vendor:  ['react', 'react-dom', 'react-router-dom'],
-            ui:      ['axios'],
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
           },
           // Content-hashed filenames for long-lived caching
           entryFileNames:  'assets/[name]-[hash].js',
@@ -42,7 +42,6 @@ export default defineConfig(({ mode }) => {
       },
 
       // Tree-shake and minify
-      minify:   'esbuild',
       target:   'es2020',
     },
 
