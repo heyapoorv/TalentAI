@@ -10,9 +10,10 @@ const Layout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const isRecruiter = user?.role === 'recruiter';
-  const portalName = isRecruiter ? "Recruiter Portal" : "Candidate Portal";
+  const isAdmin = user?.role === 'admin';
+  const portalName = isAdmin ? "Admin Portal" : (isRecruiter ? "Recruiter Portal" : "Candidate Portal");
   const userName = user?.name || user?.email?.split('@')[0] || "User";
-  const userRole = isRecruiter ? "Recruiter" : "Candidate";
+  const userRole = isAdmin ? "Administrator" : (isRecruiter ? "Recruiter" : "Candidate");
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -26,7 +27,6 @@ const Layout = ({ children }) => {
     { name: 'Applicants', icon: 'group', path: '/applicants' },
     { name: 'AI Copilot', icon: 'support_agent', path: '/recruiter-copilot' },
     { name: 'Post Job', icon: 'add_box', path: '/jobs/new' },
-    { name: 'Observability', icon: 'monitoring', path: '/admin/observability' },
   ];
 
   const candidateLinks = [
@@ -37,7 +37,11 @@ const Layout = ({ children }) => {
     { name: 'AI Copilot', icon: 'smart_toy', path: '/copilot' },
   ];
 
-  const links = isRecruiter ? recruiterLinks : candidateLinks;
+  const adminLinks = [
+    { name: 'System Admin', icon: 'admin_panel_settings', path: '/admin' },
+  ];
+
+  const links = isAdmin ? adminLinks : (isRecruiter ? recruiterLinks : candidateLinks);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);

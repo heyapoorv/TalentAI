@@ -21,6 +21,7 @@ import ObservabilityDashboard from './pages/ObservabilityDashboard';
 import CandidateComparison from './pages/CandidateComparison';
 import InterviewScorecard from './pages/InterviewScorecard';
 import ResumeOptimizer from './pages/ResumeOptimizer';
+import AdminDashboard from './pages/AdminDashboard';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useContext(AuthContext);
@@ -31,7 +32,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (!user) return <Navigate to="/" />;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'recruiter' ? '/recruiter-dashboard' : '/dashboard'} />;
+    return <Navigate to={user.role === 'admin' ? '/admin' : (user.role === 'recruiter' ? '/recruiter-dashboard' : '/dashboard')} />;
   }
 
   return <Layout>{children}</Layout>;
@@ -39,7 +40,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 const PublicRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
-  if (user) return <Navigate to={user.role === 'recruiter' ? '/recruiter-dashboard' : '/dashboard'} />;
+  if (user) return <Navigate to={user.role === 'admin' ? '/admin' : (user.role === 'recruiter' ? '/recruiter-dashboard' : '/dashboard')} />;
   return children;
 };
 
@@ -70,9 +71,11 @@ function App() {
           <Route path="/recruiter-jobs" element={<ProtectedRoute allowedRoles={['recruiter']}><JobsList /></ProtectedRoute>} />
           <Route path="/jobs/new" element={<ProtectedRoute allowedRoles={['recruiter']}><PostJob /></ProtectedRoute>} />
           <Route path="/recruiter-copilot" element={<ProtectedRoute allowedRoles={['recruiter']}><RecruiterCopilot /></ProtectedRoute>} />
-          <Route path="/admin/observability" element={<ProtectedRoute allowedRoles={['recruiter']}><ObservabilityDashboard /></ProtectedRoute>} />
           <Route path="/compare" element={<ProtectedRoute allowedRoles={['recruiter']}><CandidateComparison /></ProtectedRoute>} />
           <Route path="/scorecard/:applicationId" element={<ProtectedRoute allowedRoles={['recruiter']}><InterviewScorecard /></ProtectedRoute>} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

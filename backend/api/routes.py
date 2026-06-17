@@ -32,7 +32,7 @@ async def create_notification(db, user_id: str, title: str, message: str, n_type
         logger.error(f"Error creating notification: {e}")
 
 # --- Background Task Helpers ---
-async def process_resume_background(resume_id: str, text: str):
+async def process_resume_background(resume_id: str, text: str, db):
     """
     Runs the CPU-bound sentence-transformer embedding in a thread pool executor
     so the async event loop is never blocked by the model inference.
@@ -40,8 +40,12 @@ async def process_resume_background(resume_id: str, text: str):
     try:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, add_resume_embedding, resume_id, text)
+        from bson import ObjectId
+        await db.resumes.update_one({"_id": ObjectId(resume_id)}, {"$set": {"status": "Complete"}})
         logger.info(f"Successfully processed embedding for resume {resume_id}")
     except Exception as e:
+        from bson import ObjectId
+        await db.resumes.update_one({"_id": ObjectId(resume_id)}, {"$set": {"status": "Failed"}})
         logger.error(f"Error processing embedding for resume {resume_id}: {str(e)}")
 
 # --- Resumes ---
@@ -70,7 +74,8 @@ async def upload_resume(
         resume_id = str(result.inserted_id)
         
         # Offload heavy embedding work to background
-        background_tasks.add_task(process_resume_background, resume_id, text)
+        background_tasks.add_task(process_resume_background, resume_id, text, db)
+        observability.record_metric("resume_upload", user_id=str(current_user["_id"]))
         
         return {"message": "Resume uploaded successfully. AI analysis is running in the background.", "resume_id": resume_id}
     except HTTPException:
@@ -81,7 +86,7 @@ async def upload_resume(
 
 # --- Jobs ---
 @router.post("/jobs", response_model=schemas.JobResponse)
-async def create_job(job: schemas.JobCreate, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
+async def create_job(job: schemas.JobCreate, background_tasks: BackgroundTasks, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
     try:
         new_job = job.dict()
         new_job["recruiter_id"] = str(current_user["_id"])
@@ -94,6 +99,8 @@ async def create_job(job: schemas.JobCreate, db = Depends(get_db), current_user:
         skills_text = ", ".join(skills_list)
         loop = asyncio.get_event_loop()
         background_tasks.add_task(loop.run_in_executor, None, add_job_embedding, str(result.inserted_id), job.description + " " + skills_text)
+        
+        observability.record_metric("job_creation", user_id=str(current_user["_id"]), job_id=str(result.inserted_id))
         
         return new_job
     except Exception as e:
@@ -296,7 +303,8 @@ async def apply_to_job(application: schemas.ApplicationCreate, db = Depends(get_
         
         try:
             result = await db.applications.insert_one(app_data)
-            app_data["_id"] = str(result.inserted_id)
+            app_data["_id"] = result.inserted_id
+            observability.record_metric("job_application", user_id=str(current_user["_id"]), job_id=application.job_id)
             return app_data
         except Exception as db_err:
 

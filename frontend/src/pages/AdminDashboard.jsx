@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 
-export default function ObservabilityDashboard() {
-  const [activeTab, setActiveTab] = useState('metrics'); // 'metrics' or 'versioning'
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('metrics'); // 'metrics' or 'versioning' or 'users'
   
   // Data
   const [metrics, setMetrics] = useState(null);
   const [versions, setVersions] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [users, setUsers] = useState([]);
   
   // State
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [loadingVersions, setLoadingVersions] = useState(true);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState(24);
 
@@ -20,6 +22,7 @@ export default function ObservabilityDashboard() {
     fetchMetrics();
     fetchVersions();
     fetchJobs();
+    fetchUsers();
     
     // Refresh metrics periodically
     const interval = setInterval(() => {
@@ -59,6 +62,36 @@ export default function ObservabilityDashboard() {
       setLoadingJobs(false);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await api.get('/admin/users');
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const toggleUserStatus = async (userId, currentStatus) => {
+    try {
+      await api.put(`/admin/users/${userId}/status`, { is_active: !currentStatus });
+      fetchUsers();
+    } catch (err) {
+      alert(`Error updating user status: ${err.message}`);
+    }
+  };
+
+  const changeUserRole = async (userId, newRole) => {
+    try {
+      await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      fetchUsers();
+    } catch (err) {
+      alert(`Error updating user role: ${err.message}`);
     }
   };
 
@@ -129,6 +162,12 @@ export default function ObservabilityDashboard() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Metrics Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            User Management
           </button>
           <button 
             onClick={() => setActiveTab('versioning')}
@@ -361,6 +400,81 @@ export default function ObservabilityDashboard() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* USERS TAB */}
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800">Platform Users</h3>
+              <button 
+                onClick={fetchUsers} 
+                className="text-xs font-semibold text-primary hover:text-primary/80"
+              >
+                REFRESH
+              </button>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              {loadingUsers ? (
+                <div className="p-8 text-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+              ) : (
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+                    <tr>
+                      <th className="px-5 py-3">Name / Email</th>
+                      <th className="px-5 py-3">Role</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Joined</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u._id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-slate-800">{u.name}</p>
+                          <p className="text-xs text-slate-500">{u.email}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <select 
+                            value={u.role} 
+                            onChange={(e) => changeUserRole(u._id, e.target.value)}
+                            className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border-none outline-none cursor-pointer
+                              ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : ''}
+                              ${u.role === 'recruiter' ? 'bg-blue-100 text-blue-700' : ''}
+                              ${u.role === 'candidate' ? 'bg-slate-100 text-slate-700' : ''}
+                            `}
+                          >
+                            <option value="candidate">Candidate</option>
+                            <option value="recruiter">Recruiter</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${u.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                            {u.is_active ? 'Active' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-500">
+                          {u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Unknown'}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <button 
+                            onClick={() => toggleUserStatus(u._id, u.is_active)}
+                            className={`text-xs font-bold px-3 py-1 rounded transition-colors ${u.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                          >
+                            {u.is_active ? 'Disable' : 'Enable'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

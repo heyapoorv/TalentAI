@@ -16,6 +16,7 @@ class UserBase(BaseModel):
     bio: Optional[str] = None
     portfolio_url: Optional[str] = None
     photo_url: Optional[str] = None
+    is_active: bool = True
 
 class UserCreate(UserBase):
     password: str = Field(..., max_length=72)
@@ -37,6 +38,16 @@ class UserUpdateRequest(BaseModel):
 
     class Config:
         extra = "forbid"
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
+
+class UserManagementResponse(UserResponse):
+    created_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
 
 class JobCreate(BaseModel):
     role: str

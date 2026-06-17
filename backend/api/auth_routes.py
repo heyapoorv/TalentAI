@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from db.database import get_db
 from models import schemas
 from services.auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
+from services import observability
 from models.schemas import UserUpdateRequest
 from datetime import timedelta
 import datetime
@@ -30,6 +31,7 @@ async def register(user: schemas.UserCreate, db = Depends(get_db)):
         
         result = await db.users.insert_one(user_dict)
         user_dict["_id"] = result.inserted_id
+        observability.record_metric("registration", user_id=str(result.inserted_id), role=user_dict["role"])
         return user_dict
     except HTTPException:
         raise
@@ -47,6 +49,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db = Depends(g
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+            
+        if not user.get("is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is disabled. Please contact support."
+            )
+            
+        # Update last_login
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"last_login": datetime.datetime.utcnow()}})
+        observability.record_metric("login", user_id=str(user["_id"]), role=user.get("role"))
             
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(

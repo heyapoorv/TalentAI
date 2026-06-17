@@ -134,6 +134,11 @@ def recruiter_only(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Recruiters only")
     return user
 
+def admin_only(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
 
 # ==============================
 # ROUTE HELPERS (LOGIN / REFRESH / LOGOUT)
@@ -144,6 +149,9 @@ async def login_user(email: str, password: str, db):
 
     if not user or not verify_password(password, user.get("hashed_password", "")):
         raise HTTPException(status_code=400, detail="Invalid credentials")
+        
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Account is disabled. Please contact support.")
 
     user_id = str(user["_id"])
 
