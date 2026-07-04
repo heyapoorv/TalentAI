@@ -35,6 +35,9 @@ COPY --from=builder /install /usr/local
 # Copy source
 COPY --chown=appuser:appgroup . .
 
+# Ensure chroma_db directory exists and has correct permissions for the volume mount
+RUN mkdir -p /app/chroma_db && chown appuser:appgroup /app/chroma_db
+
 # Drop root
 USER appuser
 

@@ -62,10 +62,14 @@ async def lifespan(app: FastAPI):
             "copilot_sessions", "copilot_messages",
             "ai_versions", "reprocessing_jobs", "metrics",
         ]
+        from pymongo.errors import CollectionInvalid
         for col in required:
             if col not in existing:
-                await db.database.create_collection(col)
-                logger.info("collection_created", extra={"collection": col})
+                try:
+                    await db.database.create_collection(col)
+                    logger.info("collection_created", extra={"collection": col})
+                except CollectionInvalid:
+                    pass
 
         # Initialize services
         versioning.set_db(db.database)
