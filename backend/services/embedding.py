@@ -1,5 +1,5 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
+
 import os
 import logging
 
@@ -11,19 +11,19 @@ logger = logging.getLogger(__name__)
 MODEL_NAME = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
 
+import google.generativeai as genai
+
 # ==============================
 # INIT MODEL (SAFE)
 # ==============================
 embedder = None
 
 def load_model():
-    global embedder
     try:
-        embedder = SentenceTransformer(MODEL_NAME)
-        logger.info(f"Embedding model loaded: {MODEL_NAME}")
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        logger.info("Gemini Embedding model configured")
     except Exception as e:
-        logger.error(f"Embedding model load failed: {e}")
-        embedder = None
+        logger.error(f"Embedding model config failed: {e}")
 
 # ==============================
 # INIT CHROMA
@@ -44,10 +44,12 @@ job_collection = chroma_client.get_or_create_collection(
 # EMBEDDING FUNCTION
 # ==============================
 def get_embedding(text: str) -> list[float]:
-    if not embedder:
-        raise RuntimeError("Embedding model not loaded")
-
-    return embedder.encode(text, normalize_embeddings=True).tolist()
+    result = genai.embed_content(
+        model="models/embedding-001",
+        content=text,
+        task_type="retrieval_document"
+    )
+    return result['embedding']
 
 # ==============================
 # ADD EMBEDDINGS

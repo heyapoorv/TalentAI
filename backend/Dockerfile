@@ -45,9 +45,6 @@ RUN mkdir -p /app/.cache/huggingface && chown -R appuser:appgroup /app/.cache
 # Drop root
 USER appuser
 
-# Pre-download the ML model during build so the server boots instantly and passes Render healthchecks
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-
 EXPOSE 8000
 
 # Health check — Docker will mark container unhealthy if this fails
