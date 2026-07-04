@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     logger.info("startup_begin", extra={"environment": ENVIRONMENT})
     try:
         # Validate critical environment variables
-        required_envs = ["MONGO_URL", "JWT_SECRET", "GEMINI_API_KEY"]
+        required_envs = ["MONGO_URL", "JWT_SECRET_KEY", "GEMINI_API_KEY"]
         missing_envs = [env for env in required_envs if not os.getenv(env)]
         if missing_envs:
             logger.error("missing_environment_variables", extra={"missing": missing_envs})

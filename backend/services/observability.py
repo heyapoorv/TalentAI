@@ -54,7 +54,7 @@ def record_metric(metric_type: str, **kwargs) -> None:
     Fire-and-forget metric write. Non-blocking.
     Creates an asyncio task; if no event loop, silently skips.
     """
-    if not _db:
+    if _db is None:
         return
     try:
         loop = asyncio.get_event_loop()
