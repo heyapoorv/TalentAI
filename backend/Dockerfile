@@ -48,11 +48,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 # Gunicorn with Uvicorn workers:
-#   -w 2         → 2 worker processes (adjust to (2 * CPU) + 1 for CPU-bound)
+#   -w 1         → 1 worker process (keeps RAM usage under 512MB for free tiers)
 #   -k uvicorn   → async ASGI workers
 #   --timeout 120→ long timeout for LLM calls
 CMD ["gunicorn", "main:app", \
-     "--workers", "2", \
+     "--workers", "1", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:8000", \
      "--timeout", "120", \
