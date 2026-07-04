@@ -38,8 +38,15 @@ COPY --chown=appuser:appgroup . .
 # Ensure chroma_db directory exists and has correct permissions for the volume mount
 RUN mkdir -p /app/chroma_db && chown appuser:appgroup /app/chroma_db
 
+# Set HuggingFace cache directory to a folder we control and own
+ENV HF_HOME=/app/.cache/huggingface
+RUN mkdir -p /app/.cache/huggingface && chown -R appuser:appgroup /app/.cache
+
 # Drop root
 USER appuser
+
+# Pre-download the ML model during build so the server boots instantly and passes Render healthchecks
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 EXPOSE 8000
 
