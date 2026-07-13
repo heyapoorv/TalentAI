@@ -11,25 +11,25 @@ const SESSION_TYPES = [
     color: '#6366f1',
     gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     bg: 'rgba(99,102,241,0.08)',
-    desc: 'Ask anything about your resume — skills, gaps, improvements',
+    desc: 'Get targeted feedback on your resume — skills, gaps, improvements',
     starters: [
+      'How can I improve my resume for senior roles?',
       'What are my strongest technical skills?',
-      'How can I improve my resume?',
-      'What roles am I best suited for?',
+      'Write a better summary section for me.',
     ],
   },
   {
     key: 'job_match',
-    label: 'Job Match',
+    label: 'Match Analysis',
     icon: 'compare_arrows',
     color: '#0ea5e9',
     gradient: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
     bg: 'rgba(14,165,233,0.08)',
-    desc: 'Compare your profile against a specific job opening',
+    desc: 'Understand your match score and what skills to build',
     starters: [
-      'How well do I match this job?',
-      'What skills am I missing for this role?',
-      'Is my experience level sufficient?',
+      'Why is my match score low for this role?',
+      'What skills am I missing for this position?',
+      'Help me write a cover letter for this job.',
     ],
   },
   {
@@ -41,23 +41,23 @@ const SESSION_TYPES = [
     bg: 'rgba(245,158,11,0.08)',
     desc: 'Get targeted interview questions and answer strategies',
     starters: [
-      'Generate interview questions for this role',
+      'Generate 5 tough interview questions for this role.',
       'How should I answer "Tell me about yourself"?',
-      'What technical topics should I review?',
+      'What technical topics should I review before the interview?',
     ],
   },
   {
     key: 'career_advice',
-    label: 'Career Advice',
+    label: 'Career Guidance',
     icon: 'trending_up',
     color: '#10b981',
     gradient: 'linear-gradient(135deg, #10b981, #0ea5e9)',
     bg: 'rgba(16,185,129,0.08)',
-    desc: 'Get strategic career guidance based on your background',
+    desc: 'Strategic career planning based on your background',
     starters: [
-      'What career paths suit my background?',
-      'How do I transition to a senior role?',
-      'What skills should I learn next?',
+      'What career paths best fit my background?',
+      'How do I transition from mid-level to senior engineer?',
+      'What skills should I learn to increase my market value?',
     ],
   },
 ];
@@ -70,6 +70,48 @@ const TypingIndicator = () => (
     ))}
   </div>
 );
+
+// ── Message formatting ───────────────────────────────────────────────────────
+const formatMessage = (text) => {
+  if (!text) return null;
+  return text.split('\n').map((line, i) => {
+    if (line.startsWith('### ')) {
+      return <h3 key={i} style={{ fontSize: '15px', fontWeight: 800, marginTop: '16px', marginBottom: '8px' }}>{line.replace('### ', '')}</h3>;
+    }
+    if (line.startsWith('## ')) {
+      return <h2 key={i} style={{ fontSize: '17px', fontWeight: 800, marginTop: '18px', marginBottom: '10px' }}>{line.replace('## ', '')}</h2>;
+    }
+    
+    let isBullet = false;
+    let trimmed = line.trim();
+    if (trimmed.startsWith('* ')) {
+      line = line.replace(/^\s*\*\s+/, '');
+      isBullet = true;
+    } else if (trimmed.startsWith('- ')) {
+      line = line.replace(/^\s*-\s+/, '');
+      isBullet = true;
+    }
+
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    const formattedParts = parts.map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={j} style={{ fontWeight: 800 }}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+
+    if (isBullet) {
+      return (
+        <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', paddingLeft: '8px' }}>
+          <span style={{ color: 'inherit', opacity: 0.6 }}>•</span>
+          <span>{formattedParts}</span>
+        </div>
+      );
+    }
+    if (trimmed === '') return <div key={i} style={{ height: '8px' }} />;
+    return <div key={i} style={{ marginBottom: '8px' }}>{formattedParts}</div>;
+  });
+};
 
 // ── Message bubble component ─────────────────────────────────────────────────
 const MessageBubble = ({ msg, sessionType }) => {
@@ -104,9 +146,9 @@ const MessageBubble = ({ msg, sessionType }) => {
             ? '0 4px 16px rgba(99,102,241,0.25)'
             : '0 2px 12px rgba(0,0,0,0.06)',
           border: isUser ? 'none' : '1px solid rgba(226,232,240,0.8)',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          whiteSpace: 'normal', wordBreak: 'break-word',
         }}>
-          {msg.content}
+          {isUser ? msg.content : formatMessage(msg.content)}
         </div>
 
         {/* Timestamp */}
@@ -262,8 +304,8 @@ export default function CopilotChat() {
       setSessionsLoading(true);
       const res = await api.get('/copilot/sessions');
       setSessions(res.data || []);
-    } catch (err) {
-      console.error('Failed to load sessions', err);
+    } catch {
+      // silent — user sees empty state
     } finally {
       setSessionsLoading(false);
     }
@@ -274,8 +316,8 @@ export default function CopilotChat() {
     try {
       const res = await api.get('/jobs');
       setJobs(res.data?.jobs || res.data || []);
-    } catch (err) {
-      console.error('Failed to load jobs', err);
+    } catch {
+      // silent
     }
   }, []);
 
@@ -306,8 +348,7 @@ export default function CopilotChat() {
     try {
       const res = await api.get(`/copilot/sessions/${sess._id || sess.id}/messages`);
       setMessages(res.data || []);
-    } catch (err) {
-      console.error('Failed to load messages', err);
+    } catch {
       setMessages([]);
     } finally {
       setMessagesLoading(false);
@@ -327,8 +368,8 @@ export default function CopilotChat() {
       setShowModal(false);
       setMessages([]);
       setActiveSession(newSession);
-    } catch (err) {
-      console.error('Failed to create session', err);
+    } catch {
+      // silent — user can retry
     } finally {
       setModalLoading(false);
     }
@@ -344,8 +385,8 @@ export default function CopilotChat() {
         setActiveSession(null);
         setMessages([]);
       }
-    } catch (err) {
-      console.error('Failed to delete session', err);
+    } catch {
+      // silent
     }
   };
 
@@ -383,8 +424,7 @@ export default function CopilotChat() {
             : s
         )
       );
-    } catch (err) {
-      console.error('Failed to send message', err);
+    } catch {
       const errMsg = {
         _id: `err_${Date.now()}`,
         session_id: sessionId,

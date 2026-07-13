@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', icon: 'dashboard', path: '/recruiter-dashboard' },
     { name: 'Jobs', icon: 'work', path: '/recruiter-jobs' },
     { name: 'Applicants', icon: 'group', path: '/applicants' },
-    { name: 'AI Copilot', icon: 'support_agent', path: '/recruiter-copilot' },
+    { name: 'Action Hub', icon: 'bolt', path: '/recruiter-copilot' },
     { name: 'Post Job', icon: 'add_box', path: '/jobs/new' },
   ];
 
@@ -59,8 +59,8 @@ const Layout = ({ children }) => {
           is_read: n.is_read
         }));
         setNotifications(formatted);
-      } catch (e) {
-        console.error("Notifications fetch failed", e);
+      } catch {
+        // silent — notifications are non-critical
       }
     };
     
@@ -74,8 +74,11 @@ const Layout = ({ children }) => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const clearNotifications = async () => {
-    // In a real app, you'd mark all as read in DB
-    setNotifications([]);
+    try {
+      const unread = notifications.filter(n => !n.is_read);
+      await Promise.all(unread.map(n => api.put(`/notifications/${n.id}/read`)));
+    } catch { /* best-effort */ }
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setShowNotifications(false);
   };
 
@@ -83,8 +86,8 @@ const Layout = ({ children }) => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-    } catch (e) {
-      console.error("Could not mark as read", e);
+    } catch {
+      // silent — best-effort
     }
   };
 
@@ -174,12 +177,7 @@ const Layout = ({ children }) => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden">
         {/* Top Navigation Bar (Desktop) */}
-        <header className="hidden md:flex sticky top-0 w-full justify-between items-center px-8 h-20 bg-white/80 backdrop-blur-md z-40 border-b border-slate-100">
-          <div className="flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-2xl border border-slate-100 w-96 group focus-within:ring-2 focus-within:ring-primary/10 focus-within:border-primary/20 transition-all">
-            <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
-            <input className="bg-transparent border-none focus:ring-0 text-sm text-slate-600 w-full placeholder-slate-400 focus:outline-none" placeholder="Search candidates, jobs, or skills..." type="text" />
-          </div>
-
+        <header className="hidden md:flex sticky top-0 w-full justify-end items-center px-8 h-20 bg-white/80 backdrop-blur-md z-40 border-b border-slate-100">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4 relative">
               <button

@@ -64,6 +64,27 @@ export default {
         "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
         "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
         "label-md": ["14px", {"lineHeight": "1", "fontWeight": "500"}]
+      },
+      animation: {
+        'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in': 'fadeIn 1.2s ease-out forwards',
+        'float': 'float 8s ease-in-out infinite',
+        'float-delayed': 'float 8s ease-in-out 4s infinite',
+        'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      keyframes: {
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(-20px) scale(1.05)' },
+        }
       }
     },
   },

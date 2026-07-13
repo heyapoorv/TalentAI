@@ -31,12 +31,12 @@ def load_model():
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 
 resume_collection = chroma_client.get_or_create_collection(
-    name="resumes",
+    name="resumes_v2",
     metadata={"hnsw:space": "cosine"}
 )
 
 job_collection = chroma_client.get_or_create_collection(
-    name="jobs",
+    name="jobs_v2",
     metadata={"hnsw:space": "cosine"}
 )
 
@@ -45,7 +45,7 @@ job_collection = chroma_client.get_or_create_collection(
 # ==============================
 def get_embedding(text: str) -> list[float]:
     result = genai.embed_content(
-        model="models/embedding-001",
+        model="models/gemini-embedding-2",
         content=text,
         task_type="retrieval_document"
     )

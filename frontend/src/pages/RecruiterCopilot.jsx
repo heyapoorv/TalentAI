@@ -1,409 +1,567 @@
-import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
-// ── Quick action templates ──────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { label: 'Compare Top Candidates', icon: 'compare', prompt: 'Compare the top 5 candidates for this role across skills, experience, and culture fit.', color: '#6366f1', desc: 'Side-by-side analysis of the top applicant pool.' },
-  { label: 'Generate Interview Plan', icon: 'assignment', prompt: 'Create a structured interview plan for the top candidate based on their specific resume gaps.', color: '#0ea5e9', desc: 'Targeted questions to uncover risks.' },
-  { label: 'Hiring Recommendations', icon: 'psychology', prompt: 'Generate explicit hiring recommendations (Yes/No/Maybe) for the top 3 candidates and outline their risks.', color: '#10b981', desc: 'Data-driven verdicts on applicants.' },
-  { label: 'Generate Scorecard', icon: 'fact_check', prompt: 'Generate an interview scorecard template for evaluating the top candidates.', color: '#f59e0b', desc: 'Custom rubric based on the JD.' },
-  { label: 'Summarize Red Flags', icon: 'flag', prompt: 'Identify any potential red flags, flight risks, or major skill gaps across the entire applicant pool.', color: '#ef4444', desc: 'Risk assessment across the board.' },
-  { label: 'Draft Outreach', icon: 'mail', prompt: 'Draft a professional outreach message to invite the top candidate for an interview, personalized to their background.', color: '#8b5cf6', desc: 'Personalized email templates.' },
+// ── Action definitions ────────────────────────────────────────────────────────
+const ACTIONS = [
+  {
+    id: 'shortlist',
+    label: 'Shortlist Top Candidates',
+    icon: 'emoji_events',
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.08)',
+    border: 'rgba(245,158,11,0.2)',
+    desc: 'Rank all applicants by AI match score and fit.',
+    scope: 'job',
+  },
+  {
+    id: 'compare',
+    label: 'Compare Candidates',
+    icon: 'compare',
+    color: '#6366f1',
+    bg: 'rgba(99,102,241,0.08)',
+    border: 'rgba(99,102,241,0.2)',
+    desc: 'Side-by-side analysis of selected applicants.',
+    scope: 'multi',
+  },
+  {
+    id: 'recommendation',
+    label: 'Hiring Recommendation',
+    icon: 'psychology',
+    color: '#10b981',
+    bg: 'rgba(16,185,129,0.08)',
+    border: 'rgba(16,185,129,0.2)',
+    desc: 'AI verdict: hire / hold / reject with reasoning.',
+    scope: 'applicant',
+  },
+  {
+    id: 'scorecard',
+    label: 'Interview Scorecard',
+    icon: 'fact_check',
+    color: '#0ea5e9',
+    bg: 'rgba(14,165,233,0.08)',
+    border: 'rgba(14,165,233,0.2)',
+    desc: 'Generate structured interview questions for a candidate.',
+    scope: 'applicant',
+  },
+  {
+    id: 'insights',
+    label: 'Skill Gap Analysis',
+    icon: 'radar',
+    color: '#ef4444',
+    bg: 'rgba(239,68,68,0.08)',
+    border: 'rgba(239,68,68,0.2)',
+    desc: 'Detailed skill match breakdown and gap report.',
+    scope: 'applicant',
+  },
+  {
+    id: 'summary',
+    label: 'Candidate Summary',
+    icon: 'person_search',
+    color: '#8b5cf6',
+    bg: 'rgba(139,92,246,0.08)',
+    border: 'rgba(139,92,246,0.2)',
+    desc: 'Quick AI-generated profile snapshot from resume.',
+    scope: 'applicant',
+  },
 ];
 
-const TypingIndicator = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '14px 18px', background: 'rgba(99,102,241,0.06)', borderRadius: '18px 18px 18px 4px', width: 'fit-content', border: '1px solid rgba(99,102,241,0.15)' }}>
-    {[0, 1, 2].map(i => (
-      <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#6366f1', animation: `typing-dot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-    ))}
-  </div>
-);
+// ── Result renderer ───────────────────────────────────────────────────────────
+const ResultPanel = ({ actionId, result, loading }) => {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3 p-6">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-4 bg-slate-100 rounded animate-pulse" style={{ width: `${[80, 60, 70][i - 1]}%` }} />
+        ))}
+      </div>
+    );
+  }
+  if (!result) return null;
 
-const MessageBubble = ({ msg }) => {
-  const isUser = msg.role === 'user';
-  return (
-    <div style={{ display: 'flex', flexDirection: isUser ? 'row-reverse' : 'row', gap: '12px', alignItems: 'flex-end', marginBottom: '20px' }}>
-      {!isUser && (
-        <div style={{ width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'white' }}>support_agent</span>
-        </div>
-      )}
-      <div style={{ maxWidth: '78%', display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', gap: '8px' }}>
-        <div style={{
-          padding: '13px 17px', borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-          background: isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'white',
-          color: isUser ? 'white' : '#1e293b', fontSize: '14px', lineHeight: '1.7',
-          boxShadow: isUser ? '0 4px 16px rgba(99,102,241,0.25)' : '0 2px 12px rgba(0,0,0,0.06)',
-          border: isUser ? 'none' : '1px solid rgba(226,232,240,0.8)',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-        }}>
-          {msg.content}
-        </div>
-        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>
-          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
-        {!isUser && msg.suggestions?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
-            {msg.suggestions.map((s, i) => (
-              <button key={i} onClick={() => { const ev = new CustomEvent('rec-suggestion-click', { detail: s }); document.dispatchEvent(ev); }}
-                style={{ padding: '7px 14px', borderRadius: '999px', fontSize: '12px', border: '1px solid rgba(99,102,241,0.3)', color: '#6366f1', background: 'rgba(99,102,241,0.06)', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.06)'; e.currentTarget.style.color = '#6366f1'; }}
-              >{s}</button>
+  if (actionId === 'shortlist') {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-left">
+          <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+            <tr>
+              <th className="px-5 py-3">Rank</th>
+              <th className="px-5 py-3">Candidate</th>
+              <th className="px-5 py-3">Score</th>
+              <th className="px-5 py-3">Fit</th>
+              <th className="px-5 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.map((a, i) => (
+              <tr key={a.application_id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                <td className="px-5 py-3 font-bold text-slate-400">#{i + 1}</td>
+                <td className="px-5 py-3">
+                  <p className="font-semibold text-slate-800">{a.name}</p>
+                  <p className="text-xs text-slate-400">{a.email}</p>
+                </td>
+                <td className="px-5 py-3">
+                  <span className={`font-bold text-lg ${a.match_score >= 75 ? 'text-emerald-600' : a.match_score >= 50 ? 'text-amber-600' : 'text-slate-500'}`}>
+                    {a.match_score}%
+                  </span>
+                </td>
+                <td className="px-5 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                    a.fit_badge === 'Top Fit' ? 'bg-emerald-100 text-emerald-700' :
+                    a.fit_badge === 'Good Fit' ? 'bg-amber-100 text-amber-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>{a.fit_badge}</span>
+                </td>
+                <td className="px-5 py-3 text-xs text-slate-500 capitalize">{a.status}</td>
+              </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (actionId === 'compare') {
+    const candidates = result.candidates || [];
+    return (
+      <div className="p-6 space-y-4">
+        {result.summary && <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">{result.summary}</p>}
+        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${candidates.length}, 1fr)` }}>
+          {candidates.map(c => (
+            <div key={c.application_id || c.name} className="p-4 rounded-xl border border-slate-100 bg-white">
+              <p className="font-bold text-slate-800 mb-2">{c.name}</p>
+              <p className="text-2xl font-black text-indigo-600 mb-3">{Math.round(c.match_score || 0)}%</p>
+              {c.strengths?.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Strengths</p>
+                  <ul className="space-y-1">{c.strengths.slice(0, 3).map((s, i) => <li key={i} className="text-xs text-slate-600">• {s}</li>)}</ul>
+                </div>
+              )}
+              {c.gaps?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">Gaps</p>
+                  <ul className="space-y-1">{c.gaps.slice(0, 3).map((g, i) => <li key={i} className="text-xs text-slate-600">• {g}</li>)}</ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (actionId === 'recommendation') {
+    const verdict = result.verdict || result.decision || result.recommendation || 'N/A';
+    const verdictColor = verdict?.toLowerCase().includes('hire') ? '#10b981' : verdict?.toLowerCase().includes('reject') ? '#ef4444' : '#f59e0b';
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex items-center gap-4 p-4 rounded-xl border" style={{ borderColor: verdictColor + '30', background: verdictColor + '08' }}>
+          <span className="material-symbols-outlined text-4xl" style={{ color: verdictColor }}>
+            {verdict?.toLowerCase().includes('hire') ? 'thumb_up' : verdict?.toLowerCase().includes('reject') ? 'thumb_down' : 'thumbs_up_down'}
+          </span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Verdict</p>
+            <p className="text-2xl font-black capitalize" style={{ color: verdictColor }}>{verdict}</p>
+          </div>
+        </div>
+        {result.reasoning && <p className="text-sm text-slate-600 leading-relaxed">{result.reasoning}</p>}
+        {result.risks?.length > 0 && (
+          <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2">Risks</p>
+            <ul className="space-y-1">{result.risks.map((r, i) => <li key={i} className="text-sm text-amber-800">• {r}</li>)}</ul>
           </div>
         )}
       </div>
+    );
+  }
+
+  if (actionId === 'scorecard') {
+    const questions = result.questions || [];
+    return (
+      <div className="p-6 space-y-3">
+        {result.overview && <p className="text-sm text-slate-600 mb-4 italic">{result.overview}</p>}
+        {questions.map((q, i) => (
+          <div key={i} className="p-4 rounded-xl border border-slate-100 bg-white">
+            <div className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 font-bold text-sm flex-shrink-0 mt-0.5">{i + 1}</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-800">{q.question}</p>
+                {q.what_to_look_for && <p className="text-xs text-slate-500 mt-1 leading-relaxed">{q.what_to_look_for}</p>}
+                {q.category && <span className="mt-2 inline-block text-xs px-2 py-0.5 rounded-full bg-sky-50 text-sky-600 font-medium">{q.category}</span>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (actionId === 'insights') {
+    return (
+      <div className="p-6 space-y-4">
+        {result.match_score !== undefined && (
+          <div className="flex items-center gap-4">
+            <div className="relative w-20 h-20">
+              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#f1f5f9" strokeWidth="8" />
+                <circle cx="40" cy="40" r="32" fill="none" stroke={result.match_score >= 75 ? '#10b981' : result.match_score >= 50 ? '#f59e0b' : '#ef4444'} strokeWidth="8"
+                  strokeDasharray={`${(result.match_score / 100) * 201} 201`} strokeLinecap="round" />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-slate-900">{Math.round(result.match_score)}%</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Match Score</p>
+              <p className="text-slate-600 text-sm mt-1">{result.job_role}</p>
+            </div>
+          </div>
+        )}
+        {result.missing_skills?.length > 0 && (
+          <div>
+            <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-2">Skill Gaps</p>
+            <div className="flex flex-wrap gap-2">{result.missing_skills.map((s, i) => <span key={i} className="px-2 py-1 text-xs rounded-full bg-red-50 text-red-600 border border-red-100">{s}</span>)}</div>
+          </div>
+        )}
+        {result.strengths?.length > 0 && (
+          <div>
+            <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">Strengths</p>
+            <ul className="space-y-1">{result.strengths.slice(0, 4).map((s, i) => <li key={i} className="text-sm text-slate-600">• {s}</li>)}</ul>
+          </div>
+        )}
+        {result.suggestions?.length > 0 && (
+          <div>
+            <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">Suggestions</p>
+            <ul className="space-y-1">{result.suggestions.slice(0, 4).map((s, i) => <li key={i} className="text-sm text-slate-600">• {s}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (actionId === 'summary') {
+    const parsed = result.parsed_data ? (typeof result.parsed_data === 'string' ? JSON.parse(result.parsed_data) : result.parsed_data) : {};
+    return (
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {parsed.name && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Name</p><p className="text-sm font-semibold text-slate-800 mt-0.5">{parsed.name}</p></div>}
+          {parsed.location && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Location</p><p className="text-sm text-slate-700 mt-0.5">{parsed.location}</p></div>}
+          {parsed.experience_years && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Experience</p><p className="text-sm text-slate-700 mt-0.5">{parsed.experience_years} years</p></div>}
+          {parsed.education && <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Education</p><p className="text-sm text-slate-700 mt-0.5">{parsed.education}</p></div>}
+        </div>
+        {parsed.skills?.length > 0 && (
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Skills</p>
+            <div className="flex flex-wrap gap-2">{parsed.skills.slice(0, 12).map((s, i) => <span key={i} className="px-2 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">{s}</span>)}</div>
+          </div>
+        )}
+        {(parsed.raw_text_preview || result.resume_preview) && (
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Preview</p>
+            <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 line-clamp-4">{parsed.raw_text_preview || result.resume_preview}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <pre className="text-xs text-slate-600 bg-slate-50 rounded-xl p-4 overflow-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
     </div>
   );
 };
 
-export default function RecruiterCopilot() {
-  const { user } = useContext(AuthContext);
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ════════════════════════════════════════════════════════════════════════════
+export default function RecruiterActionHub() {
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState('');
-  const [sessions, setSessions] = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [creatingSession, setCreatingSession] = useState(false);
-  const [jobStats, setJobStats] = useState(null);
+  const [applicants, setApplicants] = useState([]);
+  const [selectedAppIds, setSelectedAppIds] = useState([]);
+  const [activeAction, setActiveAction] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
 
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-
-  // ── Load data ─────────────────────────────────────────────────────────
-  const loadAll = useCallback(async () => {
-    try {
-      const [jobsRes, sessRes] = await Promise.all([
-        api.get('/jobs'),
-        api.get('/copilot/sessions'),
-      ]);
-      // /jobs returns { jobs: [], total, page, ... }
-      const allJobs = jobsRes.data?.jobs || jobsRes.data || [];
-      setJobs(allJobs);
-      setSessions(sessRes.data || []);
-    } catch (err) {
-      console.error('Failed to load data', err);
-    } finally {
-      setSessionsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadAll(); }, [loadAll]);
-
+  // ── Load jobs ─────────────────────────────────────────────────────────
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  useEffect(() => {
-    const handler = e => { setInput(e.detail); inputRef.current?.focus(); };
-    document.addEventListener('rec-suggestion-click', handler);
-    return () => document.removeEventListener('rec-suggestion-click', handler);
-  }, []);
-
-  // Load job stats when job selected
-  useEffect(() => {
-    if (!selectedJobId) { setJobStats(null); return; }
-    const fetchStats = async () => {
+    const fetchJobs = async () => {
       try {
-        const res = await api.get(`/jobs/${selectedJobId}/applicants`);
-        const apps = Array.isArray(res.data) ? res.data : (res.data?.applicants || []);
-        setJobStats({
-          total: apps.length,
-          avgScore: apps.length ? Math.round(apps.reduce((s, a) => s + (a.match_score || 0), 0) / apps.length) : 0,
-          top: apps.length ? Math.max(...apps.map(a => a.match_score || 0)) : 0,
-        });
-      } catch { setJobStats(null); }
+        const res = await api.get('/jobs');
+        setJobs(res.data?.jobs || res.data || []);
+      } catch {
+        setJobs([]);
+      } finally {
+        setJobsLoading(false);
+      }
     };
-    fetchStats();
+    fetchJobs();
+  }, []);
+
+  // ── Load applicants when job changes ─────────────────────────────────
+  useEffect(() => {
+    if (!selectedJobId) { setApplicants([]); setSelectedAppIds([]); return; }
+    const fetchApplicants = async () => {
+      setApplicantsLoading(true);
+      setResult(null);
+      setActiveAction(null);
+      setSelectedAppIds([]);
+      try {
+        const res = await api.get(`/jobs/${selectedJobId}/applicants?sort_by=match_score`);
+        setApplicants(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setApplicants([]);
+      } finally {
+        setApplicantsLoading(false);
+      }
+    };
+    fetchApplicants();
   }, [selectedJobId]);
 
-  // ── Session actions ───────────────────────────────────────────────────
-  const startSession = async () => {
-    if (!selectedJobId || creatingSession) return;
-    setCreatingSession(true);
-    try {
-      const job = jobs.find(j => (j._id || j.id) === selectedJobId);
-      const res = await api.post('/copilot/sessions', {
-        session_type: 'recruiter_review',
-        job_id: selectedJobId,
-        name: `Review: ${job?.role || 'Job'}`,
-      });
-      const sess = res.data;
-      setSessions(prev => [sess, ...prev]);
-      setActiveSession(sess);
-      setMessages([]);
-    } catch (err) {
-      console.error('Failed to create session', err);
-    } finally {
-      setCreatingSession(false);
-    }
+  const toggleApplicant = (appId) => {
+    setSelectedAppIds(prev =>
+      prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]
+    );
   };
 
-  const selectSession = async (sess) => {
-    setActiveSession(sess);
-    if (sess.job_id) setSelectedJobId(sess.job_id);
-    try {
-      const res = await api.get(`/copilot/sessions/${sess._id || sess.id}/messages`);
-      setMessages(res.data || []);
-    } catch { setMessages([]); }
-  };
-
-  const deleteSession = async (e, sessId) => {
-    e.stopPropagation();
-    try {
-      await api.delete(`/copilot/sessions/${sessId}`);
-      setSessions(prev => prev.filter(s => (s._id || s.id) !== sessId));
-      if ((activeSession?._id || activeSession?.id) === sessId) { setActiveSession(null); setMessages([]); }
-    } catch { }
-  };
-
-  // ── Send message ──────────────────────────────────────────────────────
-  const sendMessage = async (msgText) => {
-    const question = (msgText || input).trim();
-    if (!question || !activeSession || sending) return;
-    setInput('');
-    setSending(true);
-
-    const sessionId = activeSession._id || activeSession.id;
-    const tempMsg = { _id: `t_${Date.now()}`, session_id: sessionId, role: 'user', content: question, created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, tempMsg]);
-    setIsTyping(true);
-
-    try {
-      const res = await api.post(`/copilot/sessions/${sessionId}/messages`, { message: question });
-      setMessages(prev => [...prev, res.data]);
-      setSessions(prev => prev.map(s => (s._id || s.id) === sessionId ? { ...s, updated_at: new Date().toISOString(), message_count: (s.message_count || 0) + 2 } : s));
-    } catch {
-      setMessages(prev => [...prev, { _id: `e_${Date.now()}`, session_id: sessionId, role: 'assistant', content: 'Sorry, something went wrong. Please try again.', created_at: new Date().toISOString() }]);
-    } finally {
-      setSending(false);
-      setIsTyping(false);
-    }
-  };
-
-  const handleKeyDown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-
-  const recruiterSessions = sessions.filter(s => s.session_type === 'recruiter_review');
   const selectedJob = jobs.find(j => (j._id || j.id) === selectedJobId);
+  const primaryApplicant = applicants.find(a => a.application_id === selectedAppIds[0]);
+
+  const canRunAction = (action) => {
+    if (!selectedJobId) return false;
+    if (action.scope === 'applicant') return selectedAppIds.length === 1;
+    if (action.scope === 'multi') return selectedAppIds.length >= 2;
+    if (action.scope === 'job') return true;
+    return false;
+  };
+
+  const runAction = async (action) => {
+    if (!canRunAction(action)) return;
+    setActiveAction(action);
+    setResult(null);
+    setError('');
+    setLoading(true);
+
+    try {
+      let res;
+      if (action.id === 'shortlist') {
+        res = await api.get(`/jobs/${selectedJobId}/applicants?sort_by=match_score`);
+        setResult(Array.isArray(res.data) ? res.data : []);
+      } else if (action.id === 'compare') {
+        res = await api.post(`/jobs/${selectedJobId}/compare`, { application_ids: selectedAppIds });
+        setResult(res.data);
+      } else if (action.id === 'recommendation') {
+        res = await api.get(`/applications/${selectedAppIds[0]}/recommendation`);
+        setResult(res.data);
+      } else if (action.id === 'scorecard') {
+        res = await api.get(`/applications/${selectedAppIds[0]}/scorecard`);
+        setResult(res.data);
+      } else if (action.id === 'insights') {
+        res = await api.get(`/applications/${selectedAppIds[0]}/insights`);
+        setResult(res.data);
+      } else if (action.id === 'summary') {
+        const appData = applicants.find(a => a.application_id === selectedAppIds[0]);
+        setResult(appData || {});
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Action failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <style>{`
-        @keyframes typing-dot {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-6px); opacity: 1; }
-        }
-        .rec-session-item:hover .rec-del-btn { opacity: 1 !important; }
-        .qa-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important; }
-      `}</style>
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">AI Action Hub</h1>
+        <p className="text-slate-500 mt-1">One-click AI workflows for faster, smarter hiring decisions.</p>
+      </div>
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 80px)', gap: '0', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.08)', border: '1px solid rgba(226,232,240,0.8)' }}>
-
-        {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
-        <aside style={{ width: '300px', flexShrink: 0, background: 'white', borderRight: '1px solid rgba(226,232,240,0.6)', display: 'flex', flexDirection: 'column' }}>
-
-          {/* Header */}
-          <div style={{ padding: '20px 16px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '22px', color: 'white' }}>support_agent</span>
-              </div>
-              <div>
-                <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Recruiter Copilot</h2>
-                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: 600 }}>AI-powered hiring assistant</p>
-              </div>
-            </div>
-
-            {/* Job selector */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#374151', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Job</label>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── LEFT PANEL: Context selectors ─────────────────────────── */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Job selector */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+              <span className="material-symbols-outlined text-[14px] align-middle mr-1">work</span>
+              Active Job
+            </label>
+            {jobsLoading ? (
+              <div className="h-10 bg-slate-100 rounded-xl animate-pulse" />
+            ) : (
               <select
-                id="recruiter-job-select"
+                id="action-hub-job-select"
                 value={selectedJobId}
                 onChange={e => setSelectedJobId(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '13px', color: '#1e293b', background: 'white', outline: 'none' }}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-slate-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 focus:outline-none transition-all"
               >
                 <option value="">Select a job...</option>
                 {jobs.map(j => (
                   <option key={j._id || j.id} value={j._id || j.id}>{j.role} — {j.company}</option>
                 ))}
               </select>
-            </div>
-
-            {/* Job stats bar */}
-            {jobStats && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                {[
-                  { label: 'Applicants', value: jobStats.total, icon: 'group' },
-                  { label: 'Avg Score', value: `${jobStats.avgScore}%`, icon: 'analytics' },
-                  { label: 'Top Score', value: `${Math.round(jobStats.top)}%`, icon: 'emoji_events' },
-                ].map(s => (
-                  <div key={s.label} style={{ padding: '8px', borderRadius: '8px', background: '#f8fafc', textAlign: 'center' }}>
-                    <p style={{ fontSize: '15px', fontWeight: 800, color: '#6366f1', margin: 0 }}>{s.value}</p>
-                    <p style={{ fontSize: '10px', color: '#94a3b8', margin: 0, fontWeight: 600 }}>{s.label}</p>
-                  </div>
-                ))}
+            )}
+            {selectedJob && (
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 font-medium border border-indigo-100">{selectedJob.location || 'Remote'}</span>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">{applicants.length} applicants</span>
               </div>
             )}
-
-            <button
-              id="recruiter-start-session-btn"
-              onClick={startSession}
-              disabled={!selectedJobId || creatingSession}
-              style={{
-                width: '100%', padding: '10px', borderRadius: '10px', border: 'none',
-                background: selectedJobId ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#f1f5f9',
-                color: selectedJobId ? 'white' : '#94a3b8', fontSize: '13px', fontWeight: 700, cursor: selectedJobId ? 'pointer' : 'not-allowed',
-                transition: 'all 0.2s',
-              }}
-            >
-              {creatingSession ? 'Starting...' : '+ Start New Review Session'}
-            </button>
           </div>
 
-          {/* Session list */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px 8px' }}>Past Sessions</p>
-            {sessionsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} style={{ height: '52px', borderRadius: '10px', background: '#f1f5f9', margin: '4px 0', animation: 'pulse 1.5s ease-in-out infinite' }} />
-              ))
-            ) : recruiterSessions.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '28px', display: 'block', marginBottom: '8px', opacity: 0.4 }}>folder_open</span>
-                <p style={{ fontSize: '12px', fontWeight: 600 }}>No sessions yet</p>
-              </div>
-            ) : (
-              recruiterSessions.map(sess => {
-                const sessId = sess._id || sess.id;
-                const isActive = (activeSession?._id || activeSession?.id) === sessId;
-                return (
-                  <div key={sessId} className="rec-session-item" onClick={() => selectSession(sess)}
-                    style={{ padding: '10px 12px', borderRadius: '10px', cursor: 'pointer', marginBottom: '4px', background: isActive ? 'rgba(99,102,241,0.07)' : 'transparent', border: isActive ? '1px solid rgba(99,102,241,0.2)' : '1px solid transparent', transition: 'all 0.15s', position: 'relative' }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8fafc'; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <p style={{ fontSize: '12px', fontWeight: 700, color: isActive ? '#6366f1' : '#334155', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '20px' }}>{sess.name}</p>
-                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: 500 }}>{sess.message_count || 0} messages</p>
-                    <button className="rec-del-btn" onClick={e => deleteSession(e, sessId)}
-                      style={{ position: 'absolute', top: '10px', right: '8px', opacity: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px', transition: 'opacity 0.15s' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </aside>
-
-        {/* ── MAIN AREA ─────────────────────────────────────────────── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc', minWidth: 0 }}>
-
-          {activeSession ? (
-            <>
-              {/* Header */}
-              <div style={{ padding: '16px 24px', background: 'white', borderBottom: '1px solid rgba(226,232,240,0.6)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{activeSession.name}</h3>
-                  {selectedJob && <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0, fontWeight: 600 }}>{selectedJob.company} • {selectedJob.location || 'Remote'}</p>}
-                </div>
-                {jobStats && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'rgba(99,102,241,0.08)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.15)' }}>
-                      {jobStats.total} Applicants
-                    </span>
-                    <span style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.15)' }}>
-                      Top: {Math.round(jobStats.top)}%
-                    </span>
-                  </div>
+          {/* Applicant selector */}
+          {selectedJobId && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="material-symbols-outlined text-[14px] align-middle mr-1">group</span>
+                  Select Candidates
+                </p>
+                {selectedAppIds.length > 0 && (
+                  <button onClick={() => setSelectedAppIds([])} className="text-xs text-slate-400 hover:text-red-500 transition-colors font-semibold">
+                    Clear
+                  </button>
                 )}
               </div>
-
-              {/* Action Hub */}
-              <div style={{ padding: '24px', background: 'white', borderBottom: '1px solid rgba(226,232,240,0.4)', flexShrink: 0 }}>
-                <p style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>One-Click Workflows</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                  {QUICK_ACTIONS.map(qa => (
-                    <button
-                      key={qa.label}
-                      className="qa-btn"
-                      onClick={() => sendMessage(qa.prompt)}
-                      disabled={sending}
-                      style={{
-                        padding: '16px', borderRadius: '16px', border: `1px solid ${qa.color}25`,
-                        background: `${qa.color}08`, color: qa.color, textAlign: 'left',
-                        cursor: sending ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                        display: 'flex', flexDirection: 'column', gap: '8px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{qa.icon}</span>
-                        <span style={{ fontSize: '13px', fontWeight: 800 }}>{qa.label}</span>
-                      </div>
-                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>{qa.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-                {messages.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, textAlign: 'center' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 24px rgba(99,102,241,0.3)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'white' }}>support_agent</span>
-                    </div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Recruiter Copilot Ready</h3>
-                    <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '380px', lineHeight: 1.6 }}>
-                      I have analyzed all applicants for this job. Click a quick action above or ask me anything about your candidates.
-                    </p>
+              <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                {applicantsLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-14 animate-pulse bg-slate-50 border-b border-slate-100" />
+                  ))
+                ) : applicants.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400">
+                    <span className="material-symbols-outlined text-3xl block mb-2 opacity-30">person_off</span>
+                    <p className="text-xs font-semibold">No applicants yet</p>
                   </div>
                 ) : (
-                  <>
-                    {messages.map(msg => <MessageBubble key={msg._id} msg={msg} />)}
-                    {isTyping && (
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '20px' }}>
-                        <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'white' }}>support_agent</span>
+                  applicants.map(a => {
+                    const checked = selectedAppIds.includes(a.application_id);
+                    return (
+                      <button
+                        key={a.application_id}
+                        onClick={() => toggleApplicant(a.application_id)}
+                        className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-all hover:bg-slate-50 ${checked ? 'bg-indigo-50' : ''}`}
+                      >
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>
+                          {checked && <span className="material-symbols-outlined text-white text-[13px]">check</span>}
                         </div>
-                        <TypingIndicator />
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{a.name}</p>
+                          <p className="text-xs text-slate-400 truncate">{a.email}</p>
+                        </div>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          a.match_score >= 75 ? 'bg-emerald-50 text-emerald-700' :
+                          a.match_score >= 50 ? 'bg-amber-50 text-amber-700' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>{a.match_score}%</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              {selectedAppIds.length > 0 && (
+                <div className="px-5 py-3 bg-indigo-50 border-t border-indigo-100">
+                  <p className="text-xs text-indigo-700 font-semibold">{selectedAppIds.length} candidate{selectedAppIds.length > 1 ? 's' : ''} selected</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT PANEL: Actions + Results ───────────────────────── */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Action Grid */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+              <span className="material-symbols-outlined text-[14px] align-middle mr-1">bolt</span>
+              One-Click Actions
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {ACTIONS.map(action => {
+                const enabled = canRunAction(action);
+                const active = activeAction?.id === action.id;
+                return (
+                  <button
+                    key={action.id}
+                    id={`action-${action.id}`}
+                    onClick={() => runAction(action)}
+                    disabled={!enabled || loading}
+                    title={
+                      !selectedJobId ? 'Select a job first' :
+                      action.scope === 'applicant' && selectedAppIds.length !== 1 ? 'Select exactly 1 candidate' :
+                      action.scope === 'multi' && selectedAppIds.length < 2 ? 'Select 2+ candidates' :
+                      action.label
+                    }
+                    className={`p-4 rounded-xl border text-left transition-all duration-200 group ${
+                      active ? 'ring-2 ring-offset-1' : ''
+                    } ${enabled && !loading ? 'hover:-translate-y-0.5 hover:shadow-md cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
+                    style={{
+                      borderColor: active ? action.color : action.border,
+                      background: active ? action.bg : 'white',
+                      ringColor: action.color,
+                    }}
+                  >
+                    <span className="material-symbols-outlined text-2xl block mb-2" style={{ color: action.color }}>{action.icon}</span>
+                    <p className="text-xs font-bold text-slate-800 leading-tight">{action.label}</p>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-snug hidden md:block">{action.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {!selectedJobId && (
+              <p className="text-xs text-slate-400 text-center mt-4 font-medium">
+                <span className="material-symbols-outlined text-[13px] align-middle mr-1">info</span>
+                Select a job to enable actions
+              </p>
+            )}
+          </div>
+
+          {/* Result panel */}
+          {(activeAction || error) && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {activeAction && (
+                    <span className="material-symbols-outlined text-xl" style={{ color: activeAction.color }}>{activeAction.icon}</span>
+                  )}
+                  <h3 className="font-bold text-slate-800">{activeAction?.label || 'Result'}</h3>
+                  {primaryApplicant && activeAction?.scope !== 'job' && (
+                    <span className="text-xs text-slate-400">— {primaryApplicant.name}</span>
+                  )}
+                </div>
+                {loading && (
+                  <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
 
-              {/* Input Removed - Action Driven Only */}
-            </>
-          ) : (
-            /* Hero state */
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', textAlign: 'center' }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: '22px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 12px 32px rgba(99,102,241,0.3)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'white' }}>support_agent</span>
+              {error ? (
+                <div className="p-6 flex items-center gap-3 text-red-600">
+                  <span className="material-symbols-outlined">error</span>
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              ) : (
+                <ResultPanel actionId={activeAction?.id} result={result} loading={loading} />
+              )}
+            </div>
+          )}
+
+          {/* Hero empty state */}
+          {!activeAction && !error && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/25">
+                <span className="material-symbols-outlined text-3xl text-white">bolt</span>
               </div>
-              <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', marginBottom: '10px' }}>Recruiter AI Copilot</h1>
-              <p style={{ fontSize: '15px', color: '#64748b', maxWidth: '440px', lineHeight: 1.7, marginBottom: '32px' }}>
-                Select a job from the sidebar and start a review session. I'll analyze all applicants and help you make faster, smarter hiring decisions.
+              <h3 className="text-lg font-black text-slate-900 mb-2">Select a job and run an action</h3>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                Pick a job from the left panel, optionally select candidates, then click any action to get instant AI-powered insights.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', maxWidth: '560px' }}>
-                {QUICK_ACTIONS.slice(0, 3).map(qa => (
-                  <div key={qa.label} style={{ padding: '16px', borderRadius: '12px', background: 'white', border: '1.5px solid #f1f5f9', textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: qa.color, display: 'block', marginBottom: '8px' }}>{qa.icon}</span>
-                    <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', margin: 0 }}>{qa.label}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

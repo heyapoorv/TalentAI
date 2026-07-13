@@ -12,6 +12,7 @@ import datetime
 import logging
 from bson import ObjectId
 from bson.errors import InvalidId
+from services import observability
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -467,34 +468,6 @@ async def update_application_status(application_id: str, status_update: schemas.
     except Exception as e:
         logger.error(f"Error updating application status: {str(e)}")
         raise HTTPException(status_code=500, detail="An internal server error occurred while updating status.")
-
-# --- Recruiter Pipeline: Ranked Applicants ---
-@router.get("/jobs/{job_id}/candidates", response_model=list[schemas.CandidateRanking])
-async def rank_candidates(job_id: str, db = Depends(get_db), current_user: dict = Depends(recruiter_only)):
-    """Legacy endpoint kept for backward compatibility."""
-    try:
-        applications = await db.applications.find({"job_id": job_id}).sort("match_score", -1).to_list(1000)
-        results = []
-        for app in applications:
-            score = app.get("match_score", 0.0)
-            try:
-                user = await db.users.find_one({"_id": ObjectId(app["user_id"])})
-                user_name = user["name"] if user else "Unknown User"
-            except Exception:
-                user_name = "Unknown User"
-            results.append(schemas.CandidateRanking(
-                user_id=app.get("user_id", ""),
-                name=user_name,
-                match_score=score,
-                strengths=["High semantic match"] if score > 70 else ["Basic match"],
-                weaknesses=[],
-                application_id=str(app["_id"]),
-                status=app.get("status", "Applied")
-            ))
-        return results
-    except Exception as e:
-        logger.error(f"Error ranking candidates: {str(e)}")
-        raise HTTPException(status_code=500, detail="An internal server error occurred while ranking candidates.")
 
 @router.get("/jobs/{job_id}/applicants")
 async def get_job_applicants(

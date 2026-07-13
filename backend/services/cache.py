@@ -92,7 +92,7 @@ async def get_cache(key: str) -> Optional[Any]:
         val = await client.get(key)
         return json.loads(val) if val else None
     except Exception as exc:
-        logger.error("cache_get_error", extra={"key": key, "error": str(exc)})
+        logger.debug("cache_get_error", extra={"key": key, "error": str(exc)})
         return None
 
 
@@ -103,7 +103,7 @@ async def set_cache(key: str, value: Any, expire_seconds: int = DEFAULT_TTL_SECO
     try:
         await client.set(key, json.dumps(value, default=str), ex=expire_seconds)
     except Exception as exc:
-        logger.error("cache_set_error", extra={"key": key, "error": str(exc)})
+        logger.debug("cache_set_error", extra={"key": key, "error": str(exc)})
 
 
 async def delete_cache(key: str) -> None:
@@ -113,7 +113,7 @@ async def delete_cache(key: str) -> None:
     try:
         await client.delete(key)
     except Exception as exc:
-        logger.error("cache_delete_error", extra={"key": key, "error": str(exc)})
+        logger.debug("cache_delete_error", extra={"key": key, "error": str(exc)})
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -1,14 +1,14 @@
 import asyncio
 import os
 import datetime
-from passlib.context import CryptContext
+import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClient
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from db.database import MONGO_URL, DB_NAME
 from services.embedding import add_job_embedding, add_resume_embedding
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from services.embedding import add_job_embedding, add_resume_embedding
 
 async def seed():
     client = AsyncIOMotorClient(MONGO_URL)
@@ -21,8 +21,8 @@ async def seed():
     await db.applications.delete_many({})
 
     print("Seeding Users...")
-    recruiter_password = pwd_context.hash("password")
-    candidate_password = pwd_context.hash("password")
+    recruiter_password = bcrypt.hashpw("password".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    candidate_password = bcrypt.hashpw("password".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     recruiter = {
         "name": "Sarah Recruiter",

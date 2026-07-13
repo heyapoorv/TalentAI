@@ -19,8 +19,8 @@ export default function RecruiterDashboard() {
         setJobs(res.data.jobs || []);
         setRecentActivity(res.data.recent_activity || []);
         setStats(res.data.stats || { active_jobs: 0, total_candidates: 0, avg_match_rate: '--%' });
-      } catch (error) {
-        console.error("Error fetching recruiter dashboard data:", error);
+      } catch {
+        // silent — empty state shown
       } finally {
         setLoading(false);
       }

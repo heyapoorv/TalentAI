@@ -24,8 +24,8 @@ export default function CandidateDashboard() {
 
         // Simple recommendation: Top 2 jobs (in real app, we'd use a match endpoint)
         setRecommendedJobs((jobsRes.data.jobs || []).slice(0, 2));
-      } catch (error) {
-        console.error("Error fetching candidate dashboard data:", error);
+      } catch {
+        // silent — empty state shown
       } finally {
         setLoading(false);
       }
@@ -55,7 +55,7 @@ export default function CandidateDashboard() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             Live Dashboard
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
+          <h1 className="text-5xl font-black tracking-tighter leading-tight">
             Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">Career Hub.</span>
           </h1>
           <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed">

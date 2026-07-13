@@ -85,7 +85,7 @@ async def get_current_versions(db=None) -> Dict[str, str]:
     if _cache and (now - _cache_ts) < _CACHE_TTL_SECONDS:
         return dict(_cache)
 
-    target_db = db or _db
+    target_db = db if db is not None else _db
     if target_db is None:
         return dict(DEFAULT_VERSIONS)
 
@@ -141,7 +141,7 @@ async def update_version(
     if component not in VALID_COMPONENTS:
         raise ValueError(f"Unknown component '{component}'. Valid: {VALID_COMPONENTS}")
 
-    target_db = db or _db
+    target_db = db if db is not None else _db
     if target_db is None:
         raise RuntimeError("Database not available")
 
@@ -234,7 +234,7 @@ async def count_stale_documents(
     Count how many documents in a collection need reprocessing.
     Returns {"total": N, "stale": M, "up_to_date": K}
     """
-    target_db = db or _db
+    target_db = db if db is not None else _db
     if target_db is None:
         return {"total": 0, "stale": 0, "up_to_date": 0}
 
@@ -259,7 +259,7 @@ async def count_stale_documents(
 
 async def get_version_history(limit: int = 20, db=None) -> list:
     """Return the last N version change events."""
-    target_db = db or _db
+    target_db = db if db is not None else _db
     if target_db is None:
         return []
     try:

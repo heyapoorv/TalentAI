@@ -22,27 +22,27 @@ export default function ApplicationStatus() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 p-8 animate-in fade-in duration-700 pb-20">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 animate-in fade-in duration-700">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-16 opacity-[0.02] pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+      <div className="bg-white px-8 py-10 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group mb-6">
+        <div className="absolute top-0 right-0 p-16 opacity-[0.03] pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
           <span className="material-symbols-outlined text-[180px]">send</span>
         </div>
-        <div className="relative z-10 space-y-4">
-          <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <div className="relative z-10 max-w-2xl space-y-3">
+          <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
             <Link className="hover:text-primary transition-colors" to="/dashboard">Dashboard</Link>
             <span className="material-symbols-outlined text-[12px]">chevron_right</span>
             <span className="text-primary">Application Pipeline</span>
           </nav>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">My Applications</h1>
-          <p className="text-slate-500 font-medium max-w-lg">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">My Applications</h1>
+          <p className="text-slate-500 font-medium leading-relaxed">
             Track your professional journey and monitor the status of your AI-matched applications in real-time.
           </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="bg-white border border-slate-100 rounded-[2.5rem] shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-10 space-y-4">
             {[1, 2, 3, 4].map((i) => (
@@ -66,52 +66,50 @@ export default function ApplicationStatus() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-50">
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Position Info</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] text-center">Match Score</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] text-center">Status</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] text-right">Submission Date</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] text-right">Action</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wide">Position Info</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wide text-center">Match Score</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wide text-center">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Applied</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wide text-right">Insights</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {applications.map((app, i) => (
                   <tr key={app._id || app.id} className="hover:bg-slate-50/50 transition-all group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 50}ms` }}>
-                    <td className="px-10 py-8">
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-white rounded-2xl border border-slate-100 p-1 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-sm overflow-hidden">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 bg-white rounded-xl border border-slate-100 p-1 flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-sm overflow-hidden">
                           <img src={`https://ui-avatars.com/api/?name=${app.job_role || app.job_id}&background=random&bold=true`} alt="Job" className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <h3 className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg tracking-tight leading-none">{app.job_role || "Professional Role"}</h3>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Ref ID: {app.job_id.substring(0, 8)}... AI Signature</p>
+                          <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors text-base leading-tight">{app.job_role || 'Professional Role'}</h3>
+                          <p className="text-xs text-slate-400 font-medium mt-0.5">Applied via TalentAI</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-10 py-8 text-center">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/5 text-primary font-black text-lg">
+                    <td className="px-6 py-5 text-center">
+                      <span className={`inline-flex items-center justify-center w-11 h-11 rounded-xl font-bold text-base ${(app.match_score || 0) >= 70 ? 'bg-emerald-50 text-emerald-700' : (app.match_score || 0) >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-600'}`}>
                         {Math.round(app.match_score)}%
-                      </div>
+                      </span>
                     </td>
-                    <td className="px-10 py-8 text-center">
-                      <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shadow-sm ${
-                        app.status === 'Shortlisted' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/20' :
-                        app.status === 'Rejected' ? 'bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100/20' :
-                        'bg-indigo-50 text-indigo-600 border-indigo-100 shadow-indigo-100/20'
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${
-                          app.status === 'Shortlisted' ? 'bg-emerald-500 animate-pulse' :
-                          app.status === 'Rejected' ? 'bg-rose-500' :
-                          'bg-indigo-500 animate-pulse'
-                        }`}></span>
+                    <td className="px-6 py-5 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${app.status === 'Shortlisted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          app.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${app.status === 'Shortlisted' ? 'bg-emerald-500 animate-pulse' :
+                            app.status === 'Rejected' ? 'bg-red-500' :
+                              'bg-indigo-500 animate-pulse'
+                          }`}></span>
                         {app.status}
                       </span>
                     </td>
-                    <td className="px-10 py-8 text-right font-bold text-slate-500 text-sm">
+                    <td className="px-6 py-5 text-right text-sm font-medium text-slate-500">
                       {new Date(app.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-10 py-8 text-right">
-                      <Link to={`/insights/${app._id || app.id}`} className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 hover:bg-primary hover:text-white hover:border-primary transition-all inline-flex items-center justify-center group/btn" title="View AI Insights">
-                        <span className="material-symbols-outlined text-[20px] group-hover/btn:scale-110 transition-transform">insights</span>
+                    <td className="px-6 py-5 text-right">
+                      <Link to={`/insights/${app._id || app.id}`} className="p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 hover:bg-primary hover:text-white hover:border-primary transition-all inline-flex items-center justify-center" title="View AI Insights">
+                        <span className="material-symbols-outlined text-[18px]">insights</span>
                       </Link>
                     </td>
                   </tr>

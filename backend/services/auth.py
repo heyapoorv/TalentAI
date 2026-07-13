@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, List
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from bson import ObjectId
@@ -18,7 +18,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7   # 7 days
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # ==============================
@@ -27,16 +27,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def get_password_hash(password: str) -> str:
     sha256_hash = hashlib.sha256(password.encode()).hexdigest()
-    return pwd_context.hash(sha256_hash)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(sha256_hash.encode(), salt).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     sha256_hash = hashlib.sha256(plain_password.encode()).hexdigest()
     try:
-        return pwd_context.verify(sha256_hash, hashed_password)
+        return bcrypt.checkpw(sha256_hash.encode(), hashed_password.encode('utf-8'))
     except Exception:
         # Fallback for legacy passwords hashed without SHA-256 pre-processing
         try:
-            return pwd_context.verify(plain_password[:72], hashed_password)
+            return bcrypt.checkpw(plain_password[:72].encode('utf-8'), hashed_password.encode('utf-8'))
         except Exception:
             return False
 
@@ -139,77 +140,3 @@ def admin_only(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
-
-# ==============================
-# ROUTE HELPERS (LOGIN / REFRESH / LOGOUT)
-# ==============================
-
-async def login_user(email: str, password: str, db):
-    user = await db.users.find_one({"email": email})
-
-    if not user or not verify_password(password, user.get("hashed_password", "")):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-        
-    if not user.get("is_active", True):
-        raise HTTPException(status_code=403, detail="Account is disabled. Please contact support.")
-
-    user_id = str(user["_id"])
-
-    access_token = create_access_token({
-        "sub": user_id,
-        "role": user["role"]
-    })
-
-    refresh_token = create_refresh_token({
-        "sub": user_id,
-        "role": user["role"]
-    })
-
-    # Store refresh token (single session)
-    await db.users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"refresh_token": refresh_token}}
-    )
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
-
-
-async def refresh_access_token(refresh_token: str, db):
-    try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        if payload.get("type") != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        user_id = payload.get("sub")
-
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-
-        if not user or user.get("refresh_token") != refresh_token:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-        new_access_token = create_access_token({
-            "sub": user_id,
-            "role": user["role"]
-        })
-
-        return {
-            "access_token": new_access_token,
-            "token_type": "bearer"
-        }
-
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-
-async def logout_user(user, db):
-    await db.users.update_one(
-        {"_id": user["_id"]},
-        {"$unset": {"refresh_token": ""}}
-    )
-
-    return {"message": "Logged out successfully"}

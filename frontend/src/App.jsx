@@ -17,7 +17,6 @@ import Profile from './pages/Profile';
 import HelpSupport from './pages/HelpSupport';
 import CopilotChat from './pages/CopilotChat';
 import RecruiterCopilot from './pages/RecruiterCopilot';
-import ObservabilityDashboard from './pages/ObservabilityDashboard';
 import CandidateComparison from './pages/CandidateComparison';
 import InterviewScorecard from './pages/InterviewScorecard';
 import ResumeOptimizer from './pages/ResumeOptimizer';

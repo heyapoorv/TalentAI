@@ -118,6 +118,12 @@ async def build_candidate_context(
 
     if resume:
         parsed = resume.get("parsed_data") or {}
+        if isinstance(parsed, str):
+            try:
+                import json
+                parsed = json.loads(parsed)
+            except Exception:
+                parsed = {}
         raw    = resume.get("raw_text", "")
         name   = parsed.get("name", "Candidate")
 
@@ -304,7 +310,7 @@ Be concise, decisive, and professional.""",
 # GEMINI CALLER
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _get_gemini():
+def _get_gemini(system_instruction: str = None):
     """Lazily initialise Gemini 2.5 Flash."""
     import google.generativeai as genai
     api_key = os.getenv("GEMINI_API_KEY", "")
@@ -312,6 +318,8 @@ def _get_gemini():
         return None
     try:
         genai.configure(api_key=api_key)
+        if system_instruction:
+            return genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
         return genai.GenerativeModel("gemini-2.5-flash")
     except Exception as exc:
         logger.error("copilot_gemini_init_failed", extra={"error": str(exc)})
@@ -328,7 +336,10 @@ async def _call_gemini_chat(
     """Call Gemini 2.5 Flash with conversation history."""
     import google.generativeai as genai
 
-    model = _get_gemini()
+    # Full prompt: system + context
+    full_system = f"{system_prompt}\n\n{context}" if context.strip() else system_prompt
+
+    model = _get_gemini(system_instruction=full_system)
     if not model:
         raise RuntimeError("Gemini not configured — check GEMINI_API_KEY")
 
@@ -338,19 +349,10 @@ async def _call_gemini_chat(
         role = "user" if msg["role"] == "user" else "model"
         gemini_history.append({"role": role, "parts": [msg["content"]]})
 
-    # Full prompt: system + context + user question
-    full_system = f"{system_prompt}\n\n{context}" if context.strip() else system_prompt
-
     async def _generate():
         chat = model.start_chat(history=gemini_history)
-        # Inject system context on first message or as preamble
-        if not gemini_history:
-            preamble = f"[CONTEXT]\n{full_system}\n\n[USER QUESTION]\n{user_message}"
-        else:
-            preamble = user_message
-
         response = await chat.send_message_async(
-            preamble,
+            user_message,
             generation_config=genai.GenerationConfig(
                 temperature=0.7,
                 max_output_tokens=2048,
